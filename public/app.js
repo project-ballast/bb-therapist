@@ -393,7 +393,7 @@ $("clearChat").addEventListener("click", () => {
   openChat();
 });
 $("clearAll").addEventListener("click", () => {
-  if (!confirm("Delete your chats, voice measurements, and settings from this phone? This can't be undone.")) return;
+  if (!confirm("Erase your conversations, voice history, name, and passcode from this phone? You won't be able to get them back.")) return;
   Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
   location.reload();
 });
