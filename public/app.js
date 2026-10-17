@@ -1,5 +1,4 @@
 import { detectRisk, stripToken, CRISIS_TOKEN } from "./crisis.js";
-import { SKILLS } from "./skills.js";
 import { VoiceSession, voiceProblem, baseline, describeVoice } from "./voice.js";
 
 // ---------- storage (this phone only) ----------
@@ -48,8 +47,7 @@ let sending = false;
 function show(view) {
   document.querySelectorAll(".view").forEach((v) => v.classList.add("hidden"));
   $(`view-${view}`).classList.remove("hidden");
-  document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view || (view === "chat" && b.dataset.view === "checkin")));
-  if (view === "log") renderLog();
+  document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view || (view === "chat" && b.dataset.view === "checkin") || (view === "plan" && b.dataset.view === "settings")));
   if (view === "plan") renderPlan();
   if (view === "settings") renderSettings();
   if (view === "checkin") renderCheckin();
@@ -98,16 +96,6 @@ function renderChat() {
     if (m.role === "assistant" && i > 0 && debugOn()) box.append(debugPanel(msgs[i - 1], m.analysis));
     box.append(bubble(m.role, m.role === "assistant" ? stripToken(m.content) : m.content));
   });
-  const chips = $("chatSkills");
-  chips.replaceChildren();
-  SKILLS.filter((s) => s.for.includes(chat?.state === "unsure" ? "anxious" : chat?.state))
-    .slice(0, 5)
-    .forEach((s) => {
-      const c = el("button", "chip", s.name.split(":")[0]);
-      c.type = "button";
-      c.addEventListener("click", () => openSkill(s.id));
-      chips.append(c);
-    });
 }
 function bubble(role, text) {
   return el("div", `msg ${role}`, text);
@@ -214,7 +202,7 @@ VOICE_HELP["service-not-allowed"] = VOICE_HELP["not-allowed"];
 const problem = voiceProblem();
 if (problem) {
   micBtn.classList.add("hidden");
-  $("micHint").textContent = `${VOICE_HELP[problem]} Skills and your safety plan still work.`;
+  $("micHint").textContent = `${VOICE_HELP[problem]} Your safety plan and crisis numbers are in Settings.`;
 }
 else setMic("idle");
 micBtn.addEventListener("click", async () => {
@@ -345,9 +333,9 @@ async function askClaude() {
     const msgs = {
       passcode: "The app passcode is missing or wrong. Add it in Settings.",
       busy: "The app is busy. Try again in a minute.",
-      offline: "No connection right now. Your Skills tab and safety plan still work offline.",
+      offline: "No connection right now. If you need someone now, call or text 988.",
       refusal: "I couldn't answer that one. If you're struggling, call or text 988 to reach a person.",
-      failed: "Something went wrong getting a reply. Your Skills tab and safety plan still work.",
+      failed: "Something went wrong getting a reply. Try again, or call or text 988 if you need someone now.",
     };
     $("messages").append(bubble("note", msgs[failed] || msgs.failed));
     // keep history valid: drop the unanswered user turn; one tap resends it
@@ -403,51 +391,10 @@ function openCrisis() {
   add("Things I can do right now", plan.copingSkills);
   add("Making my space safe", plan.safeEnvironment);
   add("My reasons for living", plan.reasonsToLive);
-  if (!helpers.length && !plan.copingSkills) planBox.append(el("p", "muted", "Tip: fill in your safety plan (Plan tab) so your people and steps show up here."));
+  if (!helpers.length && !plan.copingSkills) planBox.append(el("p", "muted", "Tip: add your people in Settings → My safety plan and emergency contacts, so they show up here."));
   $("crisis").classList.remove("hidden");
 }
 $("crisisClose").addEventListener("click", () => $("crisis").classList.add("hidden"));
-
-// ---------- skills ----------
-let skillFilter = "all";
-function renderSkills() {
-  const filter = $("skillFilter");
-  filter.replaceChildren();
-  [["all", "All"], ["low", "Low"], ["high", "High"], ["mixed", "Mixed"], ["anxious", "Anxious"]].forEach(([k, label]) => {
-    const c = el("button", `chip${skillFilter === k ? " on" : ""}`, label);
-    c.type = "button";
-    c.addEventListener("click", () => {
-      skillFilter = k;
-      renderSkills();
-    });
-    filter.append(c);
-  });
-  const list = $("skillList");
-  list.replaceChildren();
-  SKILLS.filter((s) => skillFilter === "all" || s.for.includes(skillFilter)).forEach((s) => {
-    const d = el("details", "skill");
-    d.id = `skill-${s.id}`;
-    const sum = el("summary", null, s.name);
-    sum.append(el("small", null, `${s.from} · ${s.when}`));
-    const body = el("div", "body");
-    const ol = el("ol");
-    s.steps.forEach((st) => ol.append(el("li", null, st)));
-    body.append(ol);
-    if (s.note) body.append(el("p", "muted", s.note));
-    d.append(sum, body);
-    list.append(d);
-  });
-}
-function openSkill(id) {
-  skillFilter = "all";
-  renderSkills();
-  show("skills");
-  const d = $(`skill-${id}`);
-  if (d) {
-    d.open = true;
-    d.scrollIntoView({ block: "start" });
-  }
-}
 
 // ---------- safety plan ----------
 const PLAN_FIELDS = ["warningSigns", "copingSkills", "places", "safeEnvironment", "reasonsToLive", "spendingLimit"];
@@ -505,50 +452,6 @@ $("planForm").addEventListener("submit", (e) => {
   $("planSaved").classList.remove("hidden");
 });
 
-// ---------- mood log ----------
-function renderLog() {
-  const days = log.filter((l) => Date.now() - new Date(l.at).getTime() < 14 * 86400 * 1000);
-  const chart = $("logChart");
-  chart.replaceChildren(el("div", "mid"));
-  if (!days.length) chart.append(el("span", "empty", "Check-ins from the last 14 days show here."));
-  [...days].reverse().forEach((l) => {
-    const wrap = el("div", "bar-wrap");
-    const bar = el("div", `bar ${l.mood >= 0 ? "pos" : "neg"}`);
-    const h = Math.max(4, (Math.abs(l.mood) / 5) * 50);
-    bar.style.height = `${h}%`;
-    if (l.mood >= 0) bar.style.bottom = "50%";
-    else bar.style.top = "50%";
-    bar.title = `${new Date(l.at).toLocaleDateString()} mood ${l.mood}`;
-    wrap.append(bar);
-    chart.append(wrap);
-  });
-  const sleeps = log.filter((l) => typeof l.sleep === "number").slice(0, 2);
-  const warn = $("sleepWarn");
-  if (sleeps.length === 2 && sleeps.every((l) => l.sleep < 6)) {
-    warn.textContent = `Your last 2 sleep entries were under 6 hours (${sleeps.map((l) => l.sleep).join(" and ")}). Short sleep can be an early sign of a high. Consider telling your prescriber.`;
-    warn.classList.remove("hidden");
-  } else warn.classList.add("hidden");
-  const list = $("logList");
-  list.replaceChildren();
-  log.slice(0, 50).forEach((l) => {
-    const li = el("li");
-    li.append(
-      el("span", null, new Date(l.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })),
-      el("span", null, `${STATE_LABELS[l.state]} · mood ${l.mood > 0 ? "+" : ""}${l.mood}${typeof l.sleep === "number" ? ` · ${l.sleep}h sleep` : ""}`)
-    );
-    list.append(li);
-  });
-}
-$("exportBtn").addEventListener("click", () => {
-  const rows = [["date_time", "state", "mood_-5_to_5", "sleep_hours"], ...log.map((l) => [l.at, STATE_LABELS[l.state], l.mood, l.sleep ?? ""])];
-  const csv = rows.map((r) => r.join(",")).join("\n");
-  const a = el("a");
-  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-  a.download = `mood-log-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-});
-
 // ---------- settings ----------
 function renderSettings() {
   $("s-name").value = profile.name || "";
@@ -572,6 +475,8 @@ $("saveSettings").addEventListener("click", async () => {
     $("settingsMsg").textContent = "Saved. Couldn't check the passcode (offline).";
   }
 });
+$("openPlan").addEventListener("click", () => show("plan"));
+$("planBack").addEventListener("click", () => show("settings"));
 $("clearChat").addEventListener("click", () => {
   if (!confirm("Delete all chats on this phone? This can't be undone.")) return;
   chat = null;
@@ -585,7 +490,6 @@ $("clearAll").addEventListener("click", () => {
 });
 
 // ---------- start ----------
-renderSkills();
 if (chat?.messages?.length && recent(chat.started)) {
   renderChat();
   show("chat");
