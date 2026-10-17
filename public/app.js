@@ -27,65 +27,47 @@ const el = (tag, cls, text) => {
   return n;
 };
 
-const STATE_LABELS = { low: "Low", high: "High / racing", mixed: "Mixed", anxious: "Anxious", unsure: "Not sure" };
-const OPENERS = {
-  low: "Thank you for checking in. That took effort. I'm here, and we can go as slowly as you need. What's it like right now?",
-  high: "Thanks for checking in. Let's slow things down together for a minute. What's going on right now?",
-  mixed: "Thanks for reaching out. Mixed feelings like this can be really hard. Before anything else: are you safe right now?",
-  anxious: "Thanks for checking in. Let's take one slow breath together first: in for 4, out for 6. When you're ready, tell me what's on your mind.",
-  unsure: "Thanks for checking in. Let's figure it out together. How has your sleep, energy, and mood been over the last few days?",
-};
+const opener = () =>
+  `${profile.name ? `Hi ${profile.name}. ` : "Hi. "}I'm here. Take your time. What's going on right now?`;
 
 let profile = load(KEYS.profile, { name: "", passcode: "" });
 let plan = load(KEYS.plan, { helpers: [], pros: [] });
-let log = load(KEYS.log, []);
-let chat = load(KEYS.chat, null); // {state, mood, sleep, started, messages:[{role,content,voice?}]}
-let voiceHistory = load(KEYS.voice, []); // numbers only, newest first: {at, mood, state, wordsPerMinute, ...}
+let chat = load(KEYS.chat, null); // {started, messages:[{role,content,voice?}]}
+let voiceHistory = load(KEYS.voice, []); // numbers only, newest first: {at, wordsPerMinute, ...}
 let sending = false;
 
 // ---------- navigation ----------
 function show(view) {
   document.querySelectorAll(".view").forEach((v) => v.classList.add("hidden"));
   $(`view-${view}`).classList.remove("hidden");
-  document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view || (view === "chat" && b.dataset.view === "checkin") || (view === "plan" && b.dataset.view === "settings")));
+  document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view || (view === "plan" && b.dataset.view === "settings")));
   if (view === "plan") renderPlan();
   if (view === "settings") renderSettings();
-  if (view === "checkin") renderCheckin();
   window.scrollTo(0, view === "chat" ? document.body.scrollHeight : 0);
 }
 document.querySelectorAll(".tabs button").forEach((b) =>
-  b.addEventListener("click", () => show(b.dataset.view === "checkin" && chat?.messages?.length && recent(chat.started) ? "chat" : b.dataset.view))
+  b.addEventListener("click", () => (b.dataset.view === "chat" ? openChat() : show(b.dataset.view)))
 );
 const recent = (iso) => Date.now() - new Date(iso).getTime() < 6 * 3600 * 1000;
 
-// ---------- check-in ----------
-function renderCheckin() {
-  $("greeting").textContent = profile.name ? `Hi ${profile.name}. How are you right now?` : "How are you right now?";
-  $("resumeBtn").classList.toggle("hidden", !chat?.messages?.length);
+// ---------- conversation start ----------
+// Talk resumes a conversation from the last 6 hours, otherwise starts a new one.
+function openChat() {
+  if (!chat?.messages?.length || !recent(chat.started)) newChat();
+  else renderChat();
+  show("chat");
 }
-$("mood").addEventListener("input", (e) => ($("moodVal").textContent = e.target.value > 0 ? `+${e.target.value}` : e.target.value));
-document.querySelectorAll(".state").forEach((b) =>
-  b.addEventListener("click", () => {
-    const state = b.dataset.state;
-    const mood = Number($("mood").value);
-    const sleepRaw = $("sleep").value;
-    const sleep = sleepRaw === "" ? null : Math.max(0, Math.min(24, Number(sleepRaw)));
-    const started = new Date().toISOString();
-    log.unshift({ at: started, state, mood, sleep });
-    log = log.slice(0, 1000);
-    save(KEYS.log, log);
-    chat = { state, mood, sleep, started, messages: [{ role: "assistant", content: OPENERS[state] }] };
-    save(KEYS.chat, chat);
-    $("sleep").value = "";
-    renderChat();
-    show("chat");
-  })
-);
-$("resumeBtn").addEventListener("click", () => {
+function newChat() {
+  if (session) return; // don't drop a recording in progress
+  chat = { started: new Date().toISOString(), messages: [{ role: "assistant", content: opener() }] };
+  save(KEYS.chat, chat);
   renderChat();
+}
+$("newChatBtn").addEventListener("click", () => {
+  if (sending) return;
+  newChat();
   show("chat");
 });
-$("newChatBtn").addEventListener("click", () => show("checkin"));
 
 // ---------- chat ----------
 function renderChat() {
@@ -153,13 +135,8 @@ function scrollDown() {
 }
 
 function context() {
-  const recentSleep = log.filter((l) => typeof l.sleep === "number").slice(0, 5).map((l) => l.sleep);
   return {
     name: profile.name || undefined,
-    state: STATE_LABELS[chat.state],
-    mood: chat.mood,
-    sleep: typeof chat.sleep === "number" ? chat.sleep : undefined,
-    recentSleep,
     warningSigns: plan.warningSigns || undefined,
     copingSkills: plan.copingSkills || undefined,
     reasonsToLive: plan.reasonsToLive || undefined,
@@ -237,7 +214,7 @@ micBtn.addEventListener("click", async () => {
   let voice = null;
   if (features) {
     voice = { at: new Date().toISOString(), ...features };
-    voiceHistory.unshift({ ...voice, mood: chat.mood, state: chat.state });
+    voiceHistory.unshift(voice);
     voiceHistory = voiceHistory.slice(0, 300);
     save(KEYS.voice, voiceHistory);
   }
@@ -481,17 +458,16 @@ $("clearChat").addEventListener("click", () => {
   if (!confirm("Delete all chats on this phone? This can't be undone.")) return;
   chat = null;
   localStorage.removeItem(KEYS.chat);
-  show("checkin");
+  openChat();
 });
 $("clearAll").addEventListener("click", () => {
-  if (!confirm("Delete your chats, safety plan, mood log, voice measurements, and settings from this phone? This can't be undone.")) return;
+  if (!confirm("Delete your chats, safety plan, voice measurements, and settings from this phone? This can't be undone.")) return;
   Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
   location.reload();
 });
 
 // ---------- start ----------
-if (chat?.messages?.length && recent(chat.started)) {
-  renderChat();
-  show("chat");
-} else show(profile.passcode ? "checkin" : "settings");
+if (profile.passcode) openChat();
+else show("settings");
+localStorage.removeItem(KEYS.log); // old check-in log from the removed mood page
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});

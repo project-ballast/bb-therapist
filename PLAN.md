@@ -16,10 +16,10 @@ A phone app Ellie opens when she feels a mood episode coming on or is in one. Sh
 
 ## How it works
 
-1. **Check-in** (10 seconds): mood slider from -5 (very low) to +5 (very high), hours slept last night, and a state: Low, High/racing, Mixed (low mood + high energy), Anxious, or Not sure.
+1. **No check-in screen** (Derek removed it): Talk opens straight into the conversation. Claude works out her state from her words and voice, and asks about sleep.
 2. **Voice chat (no typing)**: she taps the mic and talks. Her phone turns speech into words and measures 4 things on its own: speaking speed, pauses, pitch range, and loudness, compared to her usual. Claude gets the words, those numbers, her state, sleep, warning signs, and her favorite skills, and coaches to fit. Recordings are never saved or uploaded by the app; only the words and numbers leave the phone. The phone's own speech-to-text may send audio to Apple or Google.
 3. **Safety plan and contacts** (inside Settings): her warning signs, coping steps, people, and care team; the crisis panel uses them.
-4. Check-ins (mood, sleep, state) are still saved on the phone for the voice baseline and Claude's context, but there is no log screen or export (Derek removed the Skills, Plan and Log tabs on 2026-10-17).
+4. No mood or sleep log is kept and there is no export (Skills, Plan, Log tabs and the check-in page removed 2026-10-17). Her usual voice is the median of her past recordings once there are 5.
 
 ## How the coaching changes by state
 

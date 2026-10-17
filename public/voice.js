@@ -285,8 +285,8 @@ export function describeVoice(f, base) {
   };
 }
 
-// Her usual voice: medians over past recordings from steady check-ins (mood -1 to +1),
-// or over everything once there are 5+ recordings and no steady ones yet.
+// Her usual voice: medians over past recordings once there are 5+ (older recordings that came
+// with a steady mood check-in, -1 to +1, are preferred when there are 3+ of them).
 export function baseline(history) {
   const steady = history.filter((h) => typeof h.mood === "number" && Math.abs(h.mood) <= 1);
   const pool = steady.length >= 3 ? steady : history.length >= 5 ? history : [];

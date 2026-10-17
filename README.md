@@ -1,6 +1,6 @@
 # Calm like a Potato
 
-Phone web app for Ellie: check in on mood, talk (voice only) to Claude using CBT and DBT skills, with on-phone voice measurements (speed, pauses, pitch range, loudness) compared to her usual, and a safety plan with emergency contacts (in Settings) that the crisis panel uses. The plan and risks are in `PLAN.md`.
+Phone web app for Ellie: talk (voice only) to Claude using CBT and DBT skills, with on-phone voice measurements (speed, pauses, pitch range, loudness) compared to her usual, and a safety plan with emergency contacts (in Settings) that the crisis panel uses. The plan and risks are in `PLAN.md`.
 
 ## What you need
 - An Anthropic API key: https://console.anthropic.com → API Keys. Set a monthly spend limit there (for example $25).

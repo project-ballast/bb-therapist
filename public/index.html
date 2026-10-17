@@ -19,29 +19,8 @@
   </header>
 
   <main>
-    <!-- Check-in -->
-    <section id="view-checkin" class="view">
-      <h1 id="greeting">How are you right now?</h1>
-      <div class="card">
-        <label for="mood" class="label">Mood <span id="moodVal" class="pill">0</span></label>
-        <input id="mood" type="range" min="-5" max="5" step="1" value="0">
-        <div class="scale"><span>-5 very low</span><span>0 okay</span><span>+5 very high</span></div>
-        <label for="sleep" class="label">Hours slept last night</label>
-        <input id="sleep" type="number" inputmode="decimal" min="0" max="24" step="0.5" placeholder="e.g. 7">
-      </div>
-      <p class="label">What fits best?</p>
-      <div class="states">
-        <button type="button" class="state" data-state="low"><b>Low</b><span>heavy, flat, hopeless, slowed down</span></button>
-        <button type="button" class="state" data-state="high"><b>High / racing</b><span>wired, fast thoughts, little sleep, big ideas</span></button>
-        <button type="button" class="state" data-state="mixed"><b>Mixed</b><span>low mood but agitated, restless, can't settle</span></button>
-        <button type="button" class="state" data-state="anxious"><b>Anxious</b><span>worried, tense, panicky</span></button>
-        <button type="button" class="state" data-state="unsure"><b>Not sure</b><span>help me figure it out</span></button>
-      </div>
-      <button id="resumeBtn" type="button" class="link hidden">Continue last conversation</button>
-    </section>
-
     <!-- Chat -->
-    <section id="view-chat" class="view hidden">
+    <section id="view-chat" class="view">
       <div id="messages" class="messages" aria-live="polite"></div>
       <div class="voicebar">
         <div id="liveText" class="live hidden" aria-live="polite"></div>
@@ -51,7 +30,7 @@
         <div id="micHint" class="mic-hint">Tap to talk</div>
         <button id="cancelVoice" type="button" class="link hidden">Cancel</button>
       </div>
-      <button id="newChatBtn" type="button" class="link">New check-in</button>
+      <button id="newChatBtn" type="button" class="link">Start a new conversation</button>
     </section>
 
     <!-- Safety plan -->
@@ -107,7 +86,7 @@
   </main>
 
   <nav class="tabs">
-    <button type="button" data-view="checkin">Talk</button>
+    <button type="button" data-view="chat">Talk</button>
     <button type="button" data-view="settings">Settings</button>
   </nav>
 
