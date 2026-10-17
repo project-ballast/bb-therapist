@@ -54,6 +54,15 @@ function rateLimited(ip) {
   return list.length > 60;
 }
 
+// Daily cap on all chat requests, so a leaked link can't run up a big bill.
+const DAILY_LIMIT = Number(process.env.DAILY_LIMIT) || 300;
+let day = "", dayCount = 0;
+function overDailyLimit() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (today !== day) (day = today), (dayCount = 0);
+  return ++dayCount > DAILY_LIMIT;
+}
+
 function readBody(req, limit = 200_000) {
   return new Promise((resolve, reject) => {
     let size = 0;
@@ -87,7 +96,7 @@ async function handleChat(req, res) {
     res.writeHead(401, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ error: "passcode" }));
   }
-  if (rateLimited(req.socket.remoteAddress)) {
+  if (rateLimited(req.socket.remoteAddress) || overDailyLimit()) {
     res.writeHead(429, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ error: "rate" }));
   }

@@ -31,6 +31,13 @@ const opener = () =>
   `${profile.name ? `Hi ${profile.name}. ` : "Hi. "}How are you doing today?`;
 
 let profile = load(KEYS.profile, { name: "", passcode: "" });
+// One-time setup link: https://<app>/#key=<APP_PASSCODE> saves the key on this device, then hides it.
+const linkKey = new URLSearchParams(location.hash.slice(1)).get("key");
+if (linkKey) {
+  profile.passcode = linkKey;
+  save(KEYS.profile, profile);
+  history.replaceState(null, "", location.pathname);
+}
 let chat = load(KEYS.chat, null); // {started, messages:[{role,content,voice?}]}
 let voiceHistory = load(KEYS.voice, []); // numbers only, newest first: {at, wordsPerMinute, ...}
 let sending = false;
@@ -324,7 +331,7 @@ async function askClaude() {
     reply.remove();
     panel?.remove();
     const msgs = {
-      passcode: "The app passcode is missing or wrong. Add it in Settings.",
+      passcode: "This device isn't set up yet. Open the app once from its setup link, or enter the setup key in Settings.",
       busy: "The app is busy. Try again in a minute.",
       offline: "No connection right now. If you need someone now, call or text 988.",
       refusal: "I couldn't answer that one. If you're struggling, call or text 988 to reach a person.",
@@ -366,7 +373,6 @@ $("crisisClose").addEventListener("click", () => $("crisis").classList.add("hidd
 // ---------- settings ----------
 function renderSettings() {
   $("s-name").value = profile.name || "";
-  $("s-passcode").value = profile.passcode || "";
   $("s-voiceFeedback").checked = profile.voiceFeedback !== false;
   $("s-debugVoice").checked = profile.debugVoice !== false;
   $("settingsMsg").textContent = "";
@@ -375,16 +381,14 @@ function renderSettings() {
     .then((v) => ($("versionInfo").textContent = `App version: ${v.commit}`))
     .catch(() => ($("versionInfo").textContent = "App version: offline"));
 }
-$("saveSettings").addEventListener("click", async () => {
-  profile = { name: $("s-name").value.trim(), passcode: $("s-passcode").value, voiceFeedback: $("s-voiceFeedback").checked, debugVoice: $("s-debugVoice").checked };
+$("saveSettings").addEventListener("click", () => {
+  const key = $("s-key").value.trim();
+  if (key) profile.passcode = key;
+  profile = { ...profile, name: $("s-name").value.trim(), voiceFeedback: $("s-voiceFeedback").checked, debugVoice: $("s-debugVoice").checked };
   save(KEYS.profile, profile);
   if (chat) renderChat();
-  try {
-    const r = await fetch("/api/check", { method: "POST", headers: { "X-App-Passcode": profile.passcode } });
-    $("settingsMsg").textContent = r.ok ? "Saved. Passcode works." : "Saved, but the passcode is wrong.";
-  } catch {
-    $("settingsMsg").textContent = "Saved. Couldn't check the passcode (offline).";
-  }
+  $("settingsMsg").textContent = "Saved.";
+  if (key) checkSetup();
 });
 $("clearChat").addEventListener("click", () => {
   if (!confirm("Delete all chats on this phone? This can't be undone.")) return;
@@ -393,18 +397,27 @@ $("clearChat").addEventListener("click", () => {
   openChat();
 });
 $("clearAll").addEventListener("click", () => {
-  if (!confirm("Erase your conversations, voice history, name, and passcode from this phone? You won't be able to get them back.")) return;
+  if (!confirm("Erase your conversations, voice history, and name from this phone? You won't be able to get them back.")) return;
   Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
+  if (profile.passcode) save(KEYS.profile, { passcode: profile.passcode }); // keep the hidden setup key so the app still works
   location.reload();
 });
 
 // ---------- start ----------
 openChat(); // Talk is always the first screen
-// Only point to Settings if the server actually rejects the saved passcode.
-fetch("/api/check", { method: "POST", headers: { "X-App-Passcode": profile.passcode || "" } })
-  .then((r) => {
-    if (r.status === 401) $("messages").append(bubble("note", "Enter the app passcode in Settings once, then come back to Chit Chat."));
-  })
-  .catch(() => {});
+// Only mention setup if the server actually rejects this device.
+function checkSetup() {
+  return fetch("/api/check", { method: "POST", headers: { "X-App-Passcode": profile.passcode || "" } })
+    .then((r) => {
+      const missing = r.status === 401;
+      $("setupBox").classList.toggle("hidden", !missing);
+      $("s-key").value = "";
+      return missing;
+    })
+    .catch(() => false);
+}
+checkSetup().then((missing) => {
+  if (missing) $("messages").append(bubble("note", "This device isn't set up yet. Open the app once from its setup link, or enter the setup key in Settings."));
+});
 [KEYS.log, KEYS.plan].forEach((k) => localStorage.removeItem(k)); // removed check-in log and safety plan
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
