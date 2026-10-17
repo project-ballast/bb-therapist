@@ -399,7 +399,12 @@ $("clearAll").addEventListener("click", () => {
 });
 
 // ---------- start ----------
-if (profile.passcode) openChat();
-else show("settings");
+openChat(); // Talk is always the first screen
+// Only point to Settings if the server actually rejects the saved passcode.
+fetch("/api/check", { method: "POST", headers: { "X-App-Passcode": profile.passcode || "" } })
+  .then((r) => {
+    if (r.status === 401) $("messages").append(bubble("note", "Enter the app passcode in Settings once, then come back here to talk."));
+  })
+  .catch(() => {});
 [KEYS.log, KEYS.plan].forEach((k) => localStorage.removeItem(k)); // removed check-in log and safety plan
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
