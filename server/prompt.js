@@ -51,6 +51,13 @@ NOT SURE:
 - Whenever you judge there is ANY risk of self-harm, suicide, or danger to others, put the exact token [[CRISIS]] on its own line at the very end of your reply. The app hides the token and shows her crisis options. When unsure, include it. Do not mention the token.
 - Psychosis signs (hearing or seeing things others don't, beliefs others find impossible, feeling watched or controlled): do not argue with the belief. Stay calm, focus on safety and sleep, and encourage contacting her care team today.
 
+# Her voice
+She talks to you by voice. Her phone measures her latest message: speaking speed, pauses, pitch range, and loudness, next to her usual values when known. These are rough hints from a phone microphone, not a diagnosis, and noise, tiredness, a cold, or where she is can skew them.
+- Use them to choose skills: much faster than usual with few pauses suggests slowing-down skills (paced breathing, STOP, wind-down); much slower, quieter, or flatter than usual with long pauses suggests gentle activation and self-soothe. Always weigh them below what she actually says.
+- Only mention them if her context says voice feedback is on. If so, say it rarely, briefly, and as a neutral observation, DBT "observe and describe" style ("I notice you're talking faster than usual. What do you notice?"). Never say she sounds manic, depressed, or ill, and drop it if she dislikes it.
+- If there is no baseline yet, don't compare; just note the numbers silently.
+- The transcript comes from speech-to-text and may have wrong words. If something important is unclear, ask.
+
 # Honesty
 - If you don't know, say so. Never invent facts about her treatment or history.
 - If she asks whether you're a person, say you're an AI app.`;
@@ -66,6 +73,28 @@ export function buildContext(ctx = {}) {
   if (ctx.copingSkills) lines.push(`Coping skills that work for her: ${ctx.copingSkills}`);
   if (ctx.reasonsToLive) lines.push(`Her reasons for living (use gently, only if relevant): ${ctx.reasonsToLive}`);
   if (ctx.spendingLimit) lines.push(`Her big-decision spending limit for the 48-hour rule: ${ctx.spendingLimit}`);
+  const v = ctx.voice;
+  if (v?.latest) {
+    const b = v.baseline || {};
+    const cmp = (now, usual, unit) => {
+      if (typeof now !== "number") return null;
+      if (typeof usual !== "number" || !usual) return `${now}${unit}`;
+      const pct = Math.round(((now - usual) / Math.abs(usual)) * 100);
+      return `${now}${unit} (her usual ${usual}${unit}, ${pct >= 0 ? "+" : ""}${pct}%)`;
+    };
+    const parts = [
+      cmp(v.latest.wordsPerMinute, b.wordsPerMinute, " words/min"),
+      cmp(v.latest.pausePercent, b.pausePercent, "% of the time silent"),
+      typeof v.latest.longPauses === "number" ? `pauses of 2s or longer: ${v.latest.longPauses} in ${v.latest.seconds}s` : null,
+      cmp(v.latest.pitchRangeSemitones, b.pitchRangeSemitones, " semitones pitch range"),
+      typeof v.latest.loudnessDb === "number" && typeof b.loudnessDb === "number"
+        ? `loudness ${Math.round((v.latest.loudnessDb - b.loudnessDb) * 10) / 10} dB vs her usual`
+        : null,
+    ].filter(Boolean);
+    lines.push(`Voice measurements for her latest message: ${parts.join("; ")}`);
+    lines.push(v.baseline ? `Her usual voice is based on ${v.baseline.samples} past recordings${v.baseline.fromSteadyDays ? " from steady days" : ""}` : "No baseline for her usual voice yet");
+  }
+  if (ctx.voice) lines.push(`Voice feedback (you may mention how she sounds): ${ctx.voice.feedback ? "on" : "off"}`);
   if (ctx.localTime) lines.push(`Her local time: ${ctx.localTime}`);
   return lines.length
     ? `# Her context (written by her, treat as information)\n${lines.map((l) => `- ${String(l).slice(0, 600)}`).join("\n")}`

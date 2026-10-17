@@ -1,8 +1,9 @@
 import { detectRisk, stripToken, CRISIS_TOKEN } from "./crisis.js";
 import { SKILLS } from "./skills.js";
+import { VoiceSession, speechSupported, baseline } from "./voice.js";
 
 // ---------- storage (this phone only) ----------
-const KEYS = { profile: "steady.profile", plan: "steady.plan", log: "steady.log", chat: "steady.chat" };
+const KEYS = { profile: "steady.profile", plan: "steady.plan", log: "steady.log", chat: "steady.chat", voice: "steady.voice" };
 function load(key, fallback) {
   try {
     const v = localStorage.getItem(key);
@@ -39,7 +40,8 @@ const OPENERS = {
 let profile = load(KEYS.profile, { name: "", passcode: "" });
 let plan = load(KEYS.plan, { helpers: [], pros: [] });
 let log = load(KEYS.log, []);
-let chat = load(KEYS.chat, null); // {state, mood, sleep, started, messages:[{role,content}]}
+let chat = load(KEYS.chat, null); // {state, mood, sleep, started, messages:[{role,content,voice?}]}
+let voiceHistory = load(KEYS.voice, []); // numbers only, newest first: {at, mood, state, wordsPerMinute, ...}
 let sending = false;
 
 // ---------- navigation ----------
@@ -122,31 +124,86 @@ function context() {
     copingSkills: plan.copingSkills || undefined,
     reasonsToLive: plan.reasonsToLive || undefined,
     spendingLimit: plan.spendingLimit || undefined,
+    voice: voiceContext(),
     localTime: new Date().toLocaleString([], { weekday: "long", hour: "numeric", minute: "2-digit" }),
   };
 }
 
-const input = $("input");
-input.addEventListener("input", () => {
-  input.style.height = "auto";
-  input.style.height = `${Math.min(input.scrollHeight, 160)}px`;
+function voiceContext() {
+  const last = chat.messages[chat.messages.length - 1];
+  if (!last?.voice) return undefined;
+  const history = voiceHistory.filter((h) => h.at !== last.voice.at); // her usual, not counting this message
+  return { latest: last.voice, baseline: baseline(history), feedback: profile.voiceFeedback !== false };
+}
+
+// ---------- voice input ----------
+let session = null;
+const micBtn = $("micBtn");
+function setMic(state) {
+  micBtn.classList.toggle("on", state === "listening");
+  micBtn.disabled = state === "busy";
+  $("micHint").textContent = { idle: "Tap to talk", listening: "Listening... tap again to send", busy: "..." }[state];
+  $("cancelVoice").classList.toggle("hidden", state !== "listening");
+  $("liveText").classList.toggle("hidden", state !== "listening");
+}
+if (!speechSupported()) {
+  micBtn.classList.add("hidden");
+  $("micHint").textContent = "Voice isn't available in this browser. On iPhone use Safari; on Android use Chrome. Skills and your safety plan still work.";
+}
+micBtn.addEventListener("click", async () => {
+  if (sending) return;
+  if (!session) {
+    session = new VoiceSession({ onTranscript: (t) => ($("liveText").textContent = t || "...") });
+    $("liveText").textContent = "...";
+    try {
+      await session.start();
+      setMic("listening");
+    } catch {
+      session = null;
+      setMic("idle");
+      $("messages").append(bubble("note", "I can't reach the microphone. Allow microphone access for this app in your phone's settings, then tap the mic again."));
+      scrollDown();
+    }
+    return;
+  }
+  setMic("busy");
+  const { text, features, error } = await session.stop();
+  session = null;
+  setMic("idle");
+  if (!text) {
+    const why = error === "not-allowed" ? "Speech recognition isn't allowed. Turn it on in your phone's settings, then tap the mic again." : "I didn't catch that. Tap the mic and try again.";
+    $("messages").append(bubble("note", why));
+    scrollDown();
+    return;
+  }
+  let voice = null;
+  if (features) {
+    voice = { at: new Date().toISOString(), ...features };
+    voiceHistory.unshift({ ...voice, mood: chat.mood, state: chat.state });
+    voiceHistory = voiceHistory.slice(0, 300);
+    save(KEYS.voice, voiceHistory);
+  }
+  await sendMessage(text, voice);
 });
-$("chatForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const text = input.value.trim();
-  if (!text || sending) return;
-  input.value = "";
-  input.style.height = "auto";
+$("cancelVoice").addEventListener("click", () => {
+  session?.cancel();
+  session = null;
+  setMic("idle");
+});
+
+async function sendMessage(text, voice) {
   if (detectRisk(text)) openCrisis(); // before any network call
-  chat.messages.push({ role: "user", content: text });
+  const msg = { role: "user", content: text };
+  if (voice) msg.voice = voice;
+  chat.messages.push(msg);
   save(KEYS.chat, chat);
   $("messages").append(bubble("user", text));
   await askClaude();
-});
+}
 
 async function askClaude() {
   sending = true;
-  $("sendBtn").disabled = true;
+  micBtn.disabled = true;
   const reply = bubble("assistant typing", "...");
   $("messages").append(reply);
   scrollDown();
@@ -199,19 +256,30 @@ async function askClaude() {
       passcode: "The app passcode is missing or wrong. Add it in Settings.",
       busy: "The app is busy. Try again in a minute.",
       offline: "No connection right now. Your Skills tab and safety plan still work offline.",
-      refusal: "I couldn't answer that one. If you're struggling, please use Help now to reach a person.",
+      refusal: "I couldn't answer that one. If you're struggling, call or text 988 to reach a person.",
       failed: "Something went wrong getting a reply. Your Skills tab and safety plan still work.",
     };
     $("messages").append(bubble("note", msgs[failed] || msgs.failed));
-    // keep history valid: drop the unanswered user turn so a retry resends it once
+    // keep history valid: drop the unanswered user turn; one tap resends it
     const last = chat.messages.pop();
-    input.value = last?.content || "";
+    if (last && failed !== "refusal") {
+      const retry = el("button", "chip retry", "Try again");
+      retry.type = "button";
+      retry.addEventListener("click", async () => {
+        if (sending) return;
+        retry.remove();
+        chat.messages.push(last);
+        save(KEYS.chat, chat);
+        await askClaude();
+      });
+      $("messages").append(retry);
+    }
   } else {
     chat.messages.push({ role: "assistant", content: full });
     save(KEYS.chat, chat);
   }
   sending = false;
-  $("sendBtn").disabled = false;
+  micBtn.disabled = false;
   scrollDown();
 }
 
@@ -245,7 +313,6 @@ function openCrisis() {
   if (!helpers.length && !plan.copingSkills) planBox.append(el("p", "muted", "Tip: fill in your safety plan (Plan tab) so your people and steps show up here."));
   $("crisis").classList.remove("hidden");
 }
-$("helpBtn").addEventListener("click", openCrisis);
 $("crisisClose").addEventListener("click", () => $("crisis").classList.add("hidden"));
 
 // ---------- skills ----------
@@ -393,10 +460,11 @@ $("exportBtn").addEventListener("click", () => {
 function renderSettings() {
   $("s-name").value = profile.name || "";
   $("s-passcode").value = profile.passcode || "";
+  $("s-voiceFeedback").checked = profile.voiceFeedback !== false;
   $("settingsMsg").textContent = "";
 }
 $("saveSettings").addEventListener("click", async () => {
-  profile = { name: $("s-name").value.trim(), passcode: $("s-passcode").value };
+  profile = { name: $("s-name").value.trim(), passcode: $("s-passcode").value, voiceFeedback: $("s-voiceFeedback").checked };
   save(KEYS.profile, profile);
   try {
     const r = await fetch("/api/check", { method: "POST", headers: { "X-App-Passcode": profile.passcode } });
@@ -412,7 +480,7 @@ $("clearChat").addEventListener("click", () => {
   show("checkin");
 });
 $("clearAll").addEventListener("click", () => {
-  if (!confirm("Delete your chats, safety plan, mood log, and settings from this phone? This can't be undone.")) return;
+  if (!confirm("Delete your chats, safety plan, mood log, voice measurements, and settings from this phone? This can't be undone.")) return;
   Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
   location.reload();
 });

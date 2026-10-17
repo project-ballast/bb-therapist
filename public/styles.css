@@ -51,10 +51,6 @@ button, input, textarea { font: inherit; color: inherit; }
   position: sticky; top: 0; z-index: 5;
 }
 .brand { font-weight: 700; color: var(--accent); font-size: 20px; }
-.help-btn {
-  background: var(--danger); color: var(--on-strong); border: 0; border-radius: 999px;
-  padding: 8px 16px; font-weight: 700; min-height: 44px;
-}
 main { flex: 1; width: 100%; max-width: 640px; margin: 0 auto; padding: 16px 16px 96px; }
 h1 { font-size: 24px; margin: 4px 0 16px; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin: 12px 0; }
@@ -98,13 +94,6 @@ textarea { resize: vertical; }
 .msg.assistant { align-self: flex-start; background: var(--bot); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
 .msg.note { align-self: center; background: var(--danger-soft); color: var(--text); font-size: 15px; text-align: center; }
 .msg.typing { color: var(--muted); }
-.composer {
-  position: sticky; bottom: 64px; display: flex; gap: 8px; align-items: flex-end;
-  background: var(--bg); padding: 8px 0;
-}
-.composer textarea { flex: 1; max-height: 160px; }
-.send { background: var(--accent); color: var(--on-strong); border: 0; border-radius: 12px; padding: 12px 16px; font-weight: 700; min-height: 48px; }
-.send:disabled { opacity: .5; }
 .skill { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; margin: 10px 0; }
 .skill summary { padding: 14px 16px; cursor: pointer; font-weight: 700; list-style: none; }
 .skill summary::-webkit-details-marker { display: none; }
@@ -149,3 +138,31 @@ textarea { resize: vertical; }
 .crisis-plan { font-size: 15px; }
 .crisis-plan h3 { font-size: 16px; margin: 14px 0 4px; }
 .crisis-plan p { margin: 0; white-space: pre-wrap; }
+.voicebar {
+  position: sticky; bottom: 64px; background: var(--bg); padding: 8px 0 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.live {
+  align-self: stretch; background: var(--surface); border: 1px dashed var(--border); border-radius: 14px;
+  padding: 10px 14px; color: var(--muted); max-height: 120px; overflow-y: auto;
+}
+.mic {
+  width: 84px; height: 84px; border-radius: 50%; border: 0; background: var(--accent); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,0,0,.18);
+}
+.mic:disabled { opacity: .5; }
+.mic.on { background: var(--danger); animation: pulse 1.6s ease-in-out infinite; }
+.mic-icon {
+  width: 22px; height: 34px; border: 4px solid var(--on-strong); border-radius: 12px; position: relative;
+}
+.mic-icon::after {
+  content: ""; position: absolute; left: 50%; bottom: -14px; width: 4px; height: 10px; background: var(--on-strong); transform: translateX(-50%);
+}
+.mic.on .mic-icon { width: 26px; height: 26px; border-radius: 4px; background: var(--on-strong); }
+.mic.on .mic-icon::after { display: none; }
+.mic-hint { color: var(--muted); font-size: 15px; text-align: center; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(179,38,30,.45); } 50% { box-shadow: 0 0 0 14px rgba(179,38,30,0); } }
+@media (prefers-reduced-motion: reduce) { .mic.on { animation: none; } }
+.retry { align-self: center; }
+.check { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 4px; font-size: 15px; }
+.check input { width: 22px; height: 22px; flex: none; margin-top: 2px; accent-color: var(--accent); }
