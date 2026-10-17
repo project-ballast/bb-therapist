@@ -54,6 +54,9 @@ test("baseline prefers steady-mood recordings", () => {
   assert.equal(b.wordsPerMinute, 150);
   assert.equal(b.fromSteadyDays, true);
   assert.equal(baseline(h.slice(3)), null);
+  const ten = [5, 6, 5, 9, 2].map((m, i) => ({ mood10: m, wordsPerMinute: [150, 140, 160, 260, 90][i] }));
+  assert.equal(baseline(ten).wordsPerMinute, 150);
+  assert.equal(baseline(ten).fromSteadyDays, true);
 });
 
 test("context tells Claude speed vs her usual", () => {

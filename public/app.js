@@ -70,7 +70,28 @@ $("newChatBtn").addEventListener("click", () => {
 });
 
 // ---------- chat ----------
+// ---------- mood scale (1 very low, 5-6 okay, 10 very high / wired) ----------
+const moodScale = $("moodScale");
+for (let n = 1; n <= 10; n++) {
+  const b = el("button", "mood-btn", String(n));
+  b.type = "button";
+  b.dataset.mood = n;
+  b.setAttribute("aria-label", `Mood ${n} of 10`);
+  b.addEventListener("click", () => {
+    if (!chat) return;
+    chat.mood = n;
+    chat.moodAt = new Date().toISOString();
+    save(KEYS.chat, chat);
+    renderMood();
+  });
+  moodScale.append(b);
+}
+function renderMood() {
+  moodScale.querySelectorAll(".mood-btn").forEach((b) => b.classList.toggle("on", Number(b.dataset.mood) === chat?.mood));
+}
+
 function renderChat() {
+  renderMood();
   const box = $("messages");
   box.replaceChildren();
   const msgs = chat?.messages || [];
@@ -137,6 +158,7 @@ function scrollDown() {
 function context() {
   return {
     name: profile.name || undefined,
+    mood10: typeof chat.mood === "number" ? chat.mood : undefined,
     warningSigns: plan.warningSigns || undefined,
     copingSkills: plan.copingSkills || undefined,
     reasonsToLive: plan.reasonsToLive || undefined,
@@ -214,7 +236,7 @@ micBtn.addEventListener("click", async () => {
   let voice = null;
   if (features) {
     voice = { at: new Date().toISOString(), ...features };
-    voiceHistory.unshift(voice);
+    voiceHistory.unshift(typeof chat.mood === "number" ? { ...voice, mood10: chat.mood } : voice);
     voiceHistory = voiceHistory.slice(0, 300);
     save(KEYS.voice, voiceHistory);
   }

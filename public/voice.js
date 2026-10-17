@@ -288,7 +288,8 @@ export function describeVoice(f, base) {
 // Her usual voice: medians over past recordings once there are 5+ (older recordings that came
 // with a steady mood check-in, -1 to +1, are preferred when there are 3+ of them).
 export function baseline(history) {
-  const steady = history.filter((h) => typeof h.mood === "number" && Math.abs(h.mood) <= 1);
+  // Steady = 5 or 6 on the 1-10 mood scale (or -1 to +1 on the older -5 to +5 scale).
+  const steady = history.filter((h) => (typeof h.mood10 === "number" ? h.mood10 >= 5 && h.mood10 <= 6 : typeof h.mood === "number" && Math.abs(h.mood) <= 1));
   const pool = steady.length >= 3 ? steady : history.length >= 5 ? history : [];
   if (!pool.length) return null;
   const out = { samples: pool.length, fromSteadyDays: pool === steady };

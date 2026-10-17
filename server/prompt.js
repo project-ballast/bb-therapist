@@ -73,6 +73,7 @@ export function buildContext(ctx = {}) {
   if (ctx.name) lines.push(`Her name: ${ctx.name}`);
   if (ctx.state) lines.push(`State she chose at check-in: ${ctx.state}`);
   if (typeof ctx.mood === "number") lines.push(`Mood at check-in (-5 very low to +5 very high): ${ctx.mood}`);
+  if (typeof ctx.mood10 === "number") lines.push(`Mood she tapped on a 1-10 scale (1 very low, 5-6 okay, 10 very high or wired): ${ctx.mood10}. A middle number with agitated words can still mean a mixed state.`);
   if (typeof ctx.sleep === "number") lines.push(`Hours slept last night: ${ctx.sleep}`);
   if (ctx.recentSleep?.length) lines.push(`Sleep on recent check-ins (newest first): ${ctx.recentSleep.join(", ")} hours`);
   if (ctx.warningSigns) lines.push(`Her personal warning signs: ${ctx.warningSigns}`);

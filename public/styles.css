@@ -159,3 +159,12 @@ textarea { resize: vertical; }
 .debug dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 4px 0; }
 .debug dt { color: var(--muted); }
 .debug dd { margin: 0; }
+.moodbar { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; }
+.moodbar-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+.moodbar-head .muted { font-weight: 400; font-size: 13px; }
+.mood-scale { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+.mood-btn {
+  min-height: 44px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg);
+  font-weight: 700; cursor: pointer; padding: 0;
+}
+.mood-btn.on { background: var(--accent); color: var(--on-strong); border-color: var(--accent); }

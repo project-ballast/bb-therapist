@@ -21,6 +21,10 @@
   <main>
     <!-- Chat -->
     <section id="view-chat" class="view">
+      <div class="moodbar" role="group" aria-labelledby="moodLabel">
+        <div class="moodbar-head"><span id="moodLabel">Mood right now</span><span class="muted">1 very low · 5-6 okay · 10 very high</span></div>
+        <div id="moodScale" class="mood-scale"></div>
+      </div>
       <div id="messages" class="messages" aria-live="polite"></div>
       <div class="voicebar">
         <div id="liveText" class="live hidden" aria-live="polite"></div>
