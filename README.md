@@ -15,13 +15,15 @@ ANTHROPIC_API_KEY=sk-ant-... APP_PASSCODE=pick-a-long-passcode npm start
 Open http://localhost:3000. Run the safety tests with `npm test`.
 
 ## Put it online (Render example)
-1. Push this folder to a private GitHub repository.
-2. On https://render.com: New → Web Service → pick the repository.
-3. Build command `npm install`, start command `npm start`.
-4. Add environment variables: `ANTHROPIC_API_KEY` and `APP_PASSCODE`.
-5. Deploy, then open the `https://...onrender.com` address on Ellie's phone.
-6. Add to home screen: iPhone Safari → Share → Add to Home Screen. Android Chrome → menu → Add to Home screen.
-7. First launch opens Settings: enter her name and the passcode.
+Easiest: on https://render.com choose New → Blueprint, pick this repository, and enter `ANTHROPIC_API_KEY` and `APP_PASSCODE` when asked. `render.yaml` fills in everything else.
+
+Or set up a Web Service by hand:
+1. New → Web Service → pick this repository.
+2. Build Command: `npm install` (not `start`). Start Command: `npm start`.
+3. Add environment variables: `ANTHROPIC_API_KEY` and `APP_PASSCODE`.
+4. Deploy, then open the `https://...onrender.com` address on Ellie's phone.
+5. Add to home screen: iPhone Safari → Share → Add to Home Screen. Android Chrome → menu → Add to Home screen.
+6. First launch opens Settings: enter her name and the passcode.
 
 Note: Render's free tier sleeps after about 15 minutes idle, so the first reply can take 30 to 60 seconds. Use a paid instance (about $7 a month) so it answers fast in a bad moment. The skills, safety plan, and crisis numbers work even when the server is asleep or offline.
 
