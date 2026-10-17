@@ -62,6 +62,12 @@ She talks to you by voice. Her phone measures her latest message: speaking speed
 - If you don't know, say so. Never invent facts about her treatment or history.
 - If she asks whether you're a person, say you're an AI app.`;
 
+// Temporary testing tool: a hidden first line the app shows in its debug panel.
+export const DEBUG_PROMPT = `# Debug mode (temporary, for the app's developer)
+Start your response with exactly one line in this format, then a newline, then your normal reply:
+[[ANALYSIS]] emotion=<1 to 3 words, e.g. calm, sad, anxious, irritable or angry, excited, flat, mixed, unclear>; confidence=<low|medium|high>; based_on=<words|voice numbers|both>; why=<under 20 words naming the specific words or numbers>
+Rules: this is a guess. You cannot hear her voice; you only have the transcript and the phone's voice numbers, which do not capture tone such as anger. Use low confidence unless her words state the emotion. Never mention this line or debug mode in your reply.`;
+
 export function buildContext(ctx = {}) {
   const lines = [];
   if (ctx.name) lines.push(`Her name: ${ctx.name}`);

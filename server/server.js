@@ -6,7 +6,7 @@ import { timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
-import { BASE_PROMPT, buildContext } from "./prompt.js";
+import { BASE_PROMPT, DEBUG_PROMPT, buildContext } from "./prompt.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 const PASSCODE = process.env.APP_PASSCODE || "";
@@ -111,6 +111,7 @@ async function handleChat(req, res) {
   const context = buildContext(body.context);
   const system = [{ type: "text", text: BASE_PROMPT, cache_control: { type: "ephemeral" } }];
   if (context) system.push({ type: "text", text: context });
+  if (body.debug === true) system.push({ type: "text", text: DEBUG_PROMPT });
 
   try {
     const stream = client.beta.messages.stream({

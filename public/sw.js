@@ -1,5 +1,5 @@
 // Caches the app so skills, safety plan and crisis numbers work offline.
-const CACHE = "steady-v3";
+const CACHE = "steady-v4";
 const FILES = ["/", "/index.html", "/styles.css", "/app.js", "/skills.js", "/crisis.js", "/voice.js", "/manifest.webmanifest", "/icon.svg"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));

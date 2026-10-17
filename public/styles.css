@@ -166,3 +166,13 @@ textarea { resize: vertical; }
 .retry { align-self: center; }
 .check { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 4px; font-size: 15px; }
 .check input { width: 22px; height: 22px; flex: none; margin-top: 2px; accent-color: var(--accent); }
+.debug {
+  align-self: stretch; background: var(--warn); border: 1px dashed var(--border); border-radius: 12px;
+  padding: 8px 12px; font-size: 14px;
+}
+.debug summary { font-weight: 700; cursor: pointer; }
+.debug h4 { margin: 10px 0 4px; font-size: 14px; }
+.debug p { margin: 4px 0; }
+.debug dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 4px 0; }
+.debug dt { color: var(--muted); }
+.debug dd { margin: 0; }
