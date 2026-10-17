@@ -556,6 +556,10 @@ function renderSettings() {
   $("s-voiceFeedback").checked = profile.voiceFeedback !== false;
   $("s-debugVoice").checked = profile.debugVoice !== false;
   $("settingsMsg").textContent = "";
+  fetch("/api/version", { cache: "no-store" })
+    .then((r) => r.json())
+    .then((v) => ($("versionInfo").textContent = `App version: ${v.commit}`))
+    .catch(() => ($("versionInfo").textContent = "App version: offline"));
 }
 $("saveSettings").addEventListener("click", async () => {
   profile = { name: $("s-name").value.trim(), passcode: $("s-passcode").value, voiceFeedback: $("s-voiceFeedback").checked, debugVoice: $("s-debugVoice").checked };

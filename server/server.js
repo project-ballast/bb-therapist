@@ -1,7 +1,7 @@
 // Steady server: serves the app and passes chat messages to Claude.
 // It stores nothing and never logs message content.
 import http from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -149,10 +149,16 @@ async function serveStatic(req, res) {
     return res.end();
   }
   try {
+    // Always revalidate, so a new deploy reaches the phone on the next load (the ETag keeps that cheap).
+    const info = await stat(filePath);
+    const etag = `"${info.size.toString(16)}-${Math.floor(info.mtimeMs).toString(16)}"`;
+    const headers = { "Cache-Control": "no-cache", ETag: etag, ...SECURITY_HEADERS };
+    if (req.headers["if-none-match"] === etag) {
+      res.writeHead(304, headers);
+      return res.end();
+    }
     const data = await readFile(filePath);
-    const type = TYPES[path.extname(filePath)] || "application/octet-stream";
-    const noCache = urlPath === "/sw.js" || urlPath === "/index.html";
-    res.writeHead(200, { "Content-Type": type, "Cache-Control": noCache ? "no-cache" : "max-age=3600", ...SECURITY_HEADERS });
+    res.writeHead(200, { "Content-Type": TYPES[path.extname(filePath)] || "application/octet-stream", ...headers });
     res.end(data);
   } catch {
     res.writeHead(404, { "Content-Type": "text/plain" });
@@ -167,6 +173,10 @@ http
       if (req.method === "POST" && req.url === "/api/check") {
         res.writeHead(passcodeOk(req.headers["x-app-passcode"]) ? 204 : 401);
         return res.end();
+      }
+      if (req.method === "GET" && req.url === "/api/version") {
+        res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+        return res.end(JSON.stringify({ commit: (process.env.RENDER_GIT_COMMIT || "local").slice(0, 7) }));
       }
       if (req.method === "GET") return await serveStatic(req, res);
       res.writeHead(405);
