@@ -28,10 +28,9 @@ const el = (tag, cls, text) => {
 };
 
 const opener = () =>
-  `${profile.name ? `Hi ${profile.name}. ` : "Hi. "}I'm here. Take your time. What's going on right now?`;
+  `${profile.name ? `Hi ${profile.name}. ` : "Hi. "}How are you doing today?`;
 
 let profile = load(KEYS.profile, { name: "", passcode: "" });
-let plan = load(KEYS.plan, { helpers: [], pros: [] });
 let chat = load(KEYS.chat, null); // {started, messages:[{role,content,voice?}]}
 let voiceHistory = load(KEYS.voice, []); // numbers only, newest first: {at, wordsPerMinute, ...}
 let sending = false;
@@ -40,8 +39,7 @@ let sending = false;
 function show(view) {
   document.querySelectorAll(".view").forEach((v) => v.classList.add("hidden"));
   $(`view-${view}`).classList.remove("hidden");
-  document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view || (view === "plan" && b.dataset.view === "settings")));
-  if (view === "plan") renderPlan();
+  document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.view === view));
   if (view === "settings") renderSettings();
   window.scrollTo(0, view === "chat" ? document.body.scrollHeight : 0);
 }
@@ -159,10 +157,6 @@ function context() {
   return {
     name: profile.name || undefined,
     mood10: typeof chat.mood === "number" ? chat.mood : undefined,
-    warningSigns: plan.warningSigns || undefined,
-    copingSkills: plan.copingSkills || undefined,
-    reasonsToLive: plan.reasonsToLive || undefined,
-    spendingLimit: plan.spendingLimit || undefined,
     voice: voiceContext(),
     localTime: new Date().toLocaleString([], { weekday: "long", hour: "numeric", minute: "2-digit" }),
   };
@@ -201,7 +195,7 @@ VOICE_HELP["service-not-allowed"] = VOICE_HELP["not-allowed"];
 const problem = voiceProblem();
 if (problem) {
   micBtn.classList.add("hidden");
-  $("micHint").textContent = `${VOICE_HELP[problem]} Your safety plan and crisis numbers are in Settings.`;
+  $("micHint").textContent = VOICE_HELP[problem];
 }
 else setMic("idle");
 micBtn.addEventListener("click", async () => {
@@ -363,93 +357,11 @@ async function askClaude() {
   scrollDown();
 }
 
-// ---------- crisis panel ----------
+// ---------- support panel (only when risk is detected) ----------
 function openCrisis() {
-  const people = $("crisisPeople");
-  people.replaceChildren();
-  const helpers = (plan.helpers || []).filter((h) => h.phone);
-  helpers.slice(0, 3).forEach((h) => {
-    const msg = encodeURIComponent("I'm having a really hard time. Can you call me?");
-    const call = el("a", "big person", `Call ${h.name || h.phone}`);
-    call.href = `tel:${h.phone.replace(/[^\d+]/g, "")}`;
-    const text = el("a", "big person", `Text ${h.name || h.phone}: "Can you call me?"`);
-    text.href = `sms:${h.phone.replace(/[^\d+]/g, "")}?&body=${msg}`;
-    people.append(call, text);
-  });
-  (plan.pros || []).filter((p) => p.phone).slice(0, 2).forEach((p) => {
-    const a = el("a", "big person", `Call ${p.name || "my care team"}`);
-    a.href = `tel:${p.phone.replace(/[^\d+]/g, "")}`;
-    people.append(a);
-  });
-  const planBox = $("crisisPlan");
-  planBox.replaceChildren();
-  const add = (title, body) => {
-    if (!body) return;
-    planBox.append(el("h3", null, title), el("p", null, body));
-  };
-  add("Things I can do right now", plan.copingSkills);
-  add("Making my space safe", plan.safeEnvironment);
-  add("My reasons for living", plan.reasonsToLive);
-  if (!helpers.length && !plan.copingSkills) planBox.append(el("p", "muted", "Tip: add your people in Settings → My safety plan and emergency contacts, so they show up here."));
   $("crisis").classList.remove("hidden");
 }
 $("crisisClose").addEventListener("click", () => $("crisis").classList.add("hidden"));
-
-// ---------- safety plan ----------
-const PLAN_FIELDS = ["warningSigns", "copingSkills", "places", "safeEnvironment", "reasonsToLive", "spendingLimit"];
-function contactRows(boxId, list) {
-  const box = $(boxId);
-  box.replaceChildren();
-  list.forEach((c, i) => {
-    const row = el("div", "row");
-    const name = el("input");
-    name.type = "text";
-    name.placeholder = "Name";
-    name.value = c.name || "";
-    name.addEventListener("input", () => (c.name = name.value));
-    const phone = el("input");
-    phone.type = "tel";
-    phone.placeholder = "Phone";
-    phone.value = c.phone || "";
-    phone.addEventListener("input", () => (c.phone = phone.value));
-    const del = el("button", null, "✕");
-    del.type = "button";
-    del.setAttribute("aria-label", "Remove");
-    del.addEventListener("click", () => {
-      list.splice(i, 1);
-      contactRows(boxId, list);
-    });
-    row.append(name, phone, del);
-    box.append(row);
-  });
-}
-function renderPlan() {
-  PLAN_FIELDS.forEach((f) => ($(`p-${f}`).value = plan[f] || ""));
-  plan.helpers ||= [];
-  plan.pros ||= [];
-  if (!plan.helpers.length) plan.helpers.push({ name: "", phone: "" });
-  if (!plan.pros.length) plan.pros.push({ name: "", phone: "" });
-  contactRows("helpers", plan.helpers);
-  contactRows("pros", plan.pros);
-  $("planSaved").classList.add("hidden");
-}
-$("addHelper").addEventListener("click", () => {
-  plan.helpers.push({ name: "", phone: "" });
-  contactRows("helpers", plan.helpers);
-});
-$("addPro").addEventListener("click", () => {
-  plan.pros.push({ name: "", phone: "" });
-  contactRows("pros", plan.pros);
-});
-$("planForm").addEventListener("submit", (e) => {
-  e.preventDefault();
-  PLAN_FIELDS.forEach((f) => (plan[f] = $(`p-${f}`).value.trim()));
-  plan.helpers = plan.helpers.filter((c) => c.name || c.phone);
-  plan.pros = plan.pros.filter((c) => c.name || c.phone);
-  save(KEYS.plan, plan);
-  renderPlan();
-  $("planSaved").classList.remove("hidden");
-});
 
 // ---------- settings ----------
 function renderSettings() {
@@ -474,8 +386,6 @@ $("saveSettings").addEventListener("click", async () => {
     $("settingsMsg").textContent = "Saved. Couldn't check the passcode (offline).";
   }
 });
-$("openPlan").addEventListener("click", () => show("plan"));
-$("planBack").addEventListener("click", () => show("settings"));
 $("clearChat").addEventListener("click", () => {
   if (!confirm("Delete all chats on this phone? This can't be undone.")) return;
   chat = null;
@@ -483,7 +393,7 @@ $("clearChat").addEventListener("click", () => {
   openChat();
 });
 $("clearAll").addEventListener("click", () => {
-  if (!confirm("Delete your chats, safety plan, voice measurements, and settings from this phone? This can't be undone.")) return;
+  if (!confirm("Delete your chats, voice measurements, and settings from this phone? This can't be undone.")) return;
   Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
   location.reload();
 });
@@ -491,5 +401,5 @@ $("clearAll").addEventListener("click", () => {
 // ---------- start ----------
 if (profile.passcode) openChat();
 else show("settings");
-localStorage.removeItem(KEYS.log); // old check-in log from the removed mood page
+[KEYS.log, KEYS.plan].forEach((k) => localStorage.removeItem(k)); // removed check-in log and safety plan
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});

@@ -1,6 +1,6 @@
 # Calm like a Potato
 
-Phone web app for Ellie: talk (voice only) to Claude using CBT and DBT skills, with on-phone voice measurements (speed, pauses, pitch range, loudness) compared to her usual, and a safety plan with emergency contacts (in Settings) that the crisis panel uses. The plan and risks are in `PLAN.md`.
+Phone web app for Ellie's daily check-ins: she talks (voice only) to Claude, which uses CBT and DBT skills and on-phone voice measurements (speed, pauses, pitch range, loudness) compared to her usual. It is not a crisis tool; if risk is detected it shows the 988 Lifeline. The plan and risks are in `PLAN.md`.
 
 ## What you need
 - An Anthropic API key: https://console.anthropic.com → API Keys. Set a monthly spend limit there (for example $25).
@@ -25,7 +25,7 @@ Or set up a Web Service by hand:
 5. Add to home screen: iPhone Safari → Share → Add to Home Screen. Android Chrome → menu → Add to Home screen.
 6. First launch opens Settings: enter her name and the passcode.
 
-Note: Render's free tier sleeps after about 15 minutes idle, so the first reply can take 30 to 60 seconds. Use a paid instance (about $7 a month) so it answers fast in a bad moment. The skills, safety plan, and crisis numbers work even when the server is asleep or offline.
+Note: Render's free tier sleeps after about 15 minutes idle, so the first reply can take 30 to 60 seconds. A paid instance (about $7 a month) answers fast every time.
 
 ## Settings (environment variables)
 | Name | Default | Meaning |

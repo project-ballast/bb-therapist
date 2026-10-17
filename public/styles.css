@@ -94,8 +94,6 @@ textarea { resize: vertical; }
 .msg.assistant { align-self: flex-start; background: var(--bot); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
 .msg.note { align-self: center; background: var(--danger-soft); color: var(--text); font-size: 15px; text-align: center; }
 .msg.typing { color: var(--muted); }
-.row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; margin-bottom: 6px; }
-.row button { background: none; border: 1px solid var(--border); border-radius: 10px; padding: 0 12px; }
 .tabs {
   position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: var(--surface);
   border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); z-index: 5;
@@ -116,11 +114,6 @@ textarea { resize: vertical; }
 }
 .big.call { background: var(--accent); color: var(--on-strong); }
 .big.text { background: var(--accent-soft); color: var(--accent); }
-.big.person { background: var(--accent-soft); color: var(--text); }
-.big.emergency { background: var(--danger); color: var(--on-strong); }
-.crisis-plan { font-size: 15px; }
-.crisis-plan h3 { font-size: 16px; margin: 14px 0 4px; }
-.crisis-plan p { margin: 0; white-space: pre-wrap; }
 .voicebar {
   position: sticky; bottom: 64px; background: var(--bg); padding: 8px 0 4px;
   display: flex; flex-direction: column; align-items: center; gap: 6px;

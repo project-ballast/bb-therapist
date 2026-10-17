@@ -37,36 +37,6 @@
       <button id="newChatBtn" type="button" class="link">Start a new conversation</button>
     </section>
 
-    <!-- Safety plan -->
-    <section id="view-plan" class="view hidden">
-      <button type="button" class="link" id="planBack">‹ Back to Settings</button>
-      <h1>My safety plan and contacts</h1>
-      <p class="muted">Fill this in when you feel steady, ideally with your therapist. It shows up when you need it.</p>
-      <p class="muted">Crisis line, free 24/7: <a href="tel:988">call 988</a> or <a href="sms:988">text 988</a>. Emergency: <a href="tel:911">911</a>.</p>
-      <form id="planForm">
-        <label class="label" for="p-warningSigns">1. My warning signs</label>
-        <textarea id="p-warningSigns" rows="3" placeholder="e.g. sleeping under 6 hours, spending, not answering texts"></textarea>
-        <label class="label" for="p-copingSkills">2. Things I can do on my own</label>
-        <textarea id="p-copingSkills" rows="3" placeholder="e.g. cold shower, walk the dog, music"></textarea>
-        <label class="label" for="p-places">3. People and places that distract me</label>
-        <textarea id="p-places" rows="2" placeholder="e.g. coffee shop, sister's house"></textarea>
-        <p class="label">4. People I can ask for help</p>
-        <div id="helpers"></div>
-        <button type="button" class="link" id="addHelper">+ Add person</button>
-        <p class="label">5. My care team</p>
-        <div id="pros"></div>
-        <button type="button" class="link" id="addPro">+ Add professional</button>
-        <label class="label" for="p-safeEnvironment">6. Making my space safe</label>
-        <textarea id="p-safeEnvironment" rows="2" placeholder="e.g. ask someone I trust to hold extra medication"></textarea>
-        <label class="label" for="p-reasonsToLive">My reasons for living</label>
-        <textarea id="p-reasonsToLive" rows="2"></textarea>
-        <label class="label" for="p-spendingLimit">Big-decision spending limit (48-hour rule)</label>
-        <input id="p-spendingLimit" type="text" placeholder="e.g. $200">
-        <button type="submit" class="primary">Save plan</button>
-        <span id="planSaved" class="muted hidden">Saved on this phone.</span>
-      </form>
-    </section>
-
     <!-- Settings -->
     <section id="view-settings" class="view hidden">
       <h1>Settings</h1>
@@ -78,10 +48,9 @@
       <label class="check"><input id="s-voiceFeedback" type="checkbox"> Let the app mention how my voice sounds (for example, "you're talking faster than usual")</label>
       <button id="saveSettings" type="button" class="primary">Save</button>
       <span id="settingsMsg" class="muted"></span>
-      <button id="openPlan" type="button" class="primary">My safety plan and emergency contacts</button>
       <div class="card">
-        <p><b>Privacy.</b> Your chats, plan, log, and voice measurements are stored only on this phone. Recordings are not saved. Your phone's speech-to-text may send audio to Apple or Google to turn it into words. To reply, the words and voice measurements pass through Anthropic (the company behind Claude) and are not stored by this app's server. Clearing your browser data erases everything here.</p>
-        <p><b>This is not a therapist or a crisis service.</b> In an emergency call 911. To talk to someone now, call or text 988.</p>
+        <p><b>Privacy.</b> Your chats and voice measurements are stored only on this phone. Recordings are not saved. Your phone's speech-to-text may send audio to Apple or Google to turn it into words. To reply, the words and voice measurements pass through Anthropic (the company behind Claude) and are not stored by this app's server. Clearing your browser data erases everything here.</p>
+        <p><b>This is a daily check-in, not a therapist or a crisis service.</b> In an emergency call 911. To talk to someone now, call or text 988.</p>
       </div>
       <p id="versionInfo" class="muted"></p>
       <button id="clearChat" type="button" class="danger-outline">Delete all chats</button>
@@ -94,17 +63,14 @@
     <button type="button" data-view="settings">Settings</button>
   </nav>
 
-  <!-- Crisis panel -->
+  <!-- Support panel: opens only when risk is detected -->
   <div id="crisis" class="crisis hidden" role="dialog" aria-modal="true" aria-labelledby="crisisTitle">
     <div class="crisis-box">
       <h2 id="crisisTitle">You don't have to get through this alone</h2>
-      <p>Talk to a real person right now. It's free, 24/7.</p>
+      <p>The 988 Lifeline has real people to talk to, free, 24/7.</p>
       <a class="big call" href="tel:988">Call 988</a>
       <a class="big text" href="sms:988">Text 988</a>
-      <div id="crisisPeople"></div>
-      <a class="big emergency" href="tel:911">Emergency: call 911</a>
-      <div id="crisisPlan" class="crisis-plan"></div>
-      <button id="crisisClose" type="button" class="link">I'm safe right now</button>
+      <button id="crisisClose" type="button" class="link">Back to the conversation</button>
     </div>
   </div>
 </body>
