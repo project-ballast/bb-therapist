@@ -1,4 +1,4 @@
-// Steady server: serves the app and passes chat messages to Claude.
+// Calm like a Potato server: serves the app and passes chat messages to Claude.
 // It stores nothing and never logs message content.
 import http from "node:http";
 import { readFile, stat } from "node:fs/promises";
@@ -187,4 +187,4 @@ http
       res.end();
     }
   })
-  .listen(PORT, () => console.log(`Steady running on http://localhost:${PORT}`));
+  .listen(PORT, () => console.log(`Calm like a Potato running on http://localhost:${PORT}`));

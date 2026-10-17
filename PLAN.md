@@ -1,4 +1,4 @@
-# Steady: a support app for Ellie
+# Calm like a Potato: a support app for Ellie
 
 A phone app Ellie opens when she feels a mood episode coming on or is in one. She says how she feels, picks a state, and talks to it. It coaches her through skills from two proven talk therapies: cognitive behavioral therapy (spotting and testing unhelpful thoughts) and dialectical behavior therapy (skills for riding out strong emotions and urges).
 
