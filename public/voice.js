@@ -7,30 +7,61 @@ const MIN_HZ = 75;
 const MAX_HZ = 400;
 
 const Recognition = typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
-export const speechSupported = () => !!Recognition && !!navigator.mediaDevices?.getUserMedia;
+
+// Why voice can't work here, or null if it should.
+export function voiceProblem() {
+  if (!window.isSecureContext) return "insecure";
+  if (!Recognition) return "unsupported";
+  return null;
+}
+
+// Errors that end a recording; others (like a few seconds of silence) are recoverable.
+const FATAL = new Set(["not-allowed", "service-not-allowed", "network", "audio-capture", "language-not-supported", "bad-grammar"]);
 
 export class VoiceSession {
-  constructor({ onTranscript } = {}) {
+  constructor({ onTranscript, onFatal } = {}) {
     this.onTranscript = onTranscript || (() => {});
+    this.onFatal = onFatal || (() => {});
     this.frames = []; // {rms, pitch}
     this.finalText = "";
     this.interim = "";
     this.active = false;
   }
 
-  async start() {
+  // Call directly from the tap/click: some browsers only allow speech-to-text to start inside it.
+  start() {
+    this.active = true;
+    // Create the audio context inside the tap too, or browsers start it paused (silent).
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.ctx.resume?.().catch(() => {});
+    } catch {
+      this.ctx = null;
+    }
+    this.startRecognition();
+    // Voice measurements are optional; the message still works without them.
+    this.startMeter().catch(() => {
+      this.meterFailed = true;
+    });
+  }
+
+  async startMeter() {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("no getUserMedia");
     this.stream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false },
     });
-    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!this.active) {
+      this.stream.getTracks().forEach((t) => t.stop());
+      return;
+    }
+    if (!this.ctx) throw new Error("no audio context");
+    if (this.ctx.state === "suspended") await this.ctx.resume();
     const src = this.ctx.createMediaStreamSource(this.stream);
     this.analyser = this.ctx.createAnalyser();
     this.analyser.fftSize = 2048;
     src.connect(this.analyser);
     this.buf = new Float32Array(this.analyser.fftSize);
-    this.active = true;
     this.timer = setInterval(() => this.sample(), FRAME_MS);
-    this.startRecognition();
   }
 
   startRecognition() {
@@ -49,7 +80,10 @@ export class VoiceSession {
       this.onTranscript(this.text());
     };
     rec.onerror = (e) => {
+      if (!FATAL.has(e.error) || !this.active) return;
       this.error = e.error;
+      this.cancel();
+      this.onFatal(e.error);
     };
     // Some browsers stop listening after a silence; restart while still recording.
     rec.onend = () => {
@@ -62,7 +96,12 @@ export class VoiceSession {
       } else this.recEnded?.();
     };
     this.rec = rec;
-    rec.start();
+    try {
+      rec.start();
+    } catch {
+      this.error = "start-failed";
+      setTimeout(() => this.onFatal("start-failed"), 0);
+    }
   }
 
   text() {
@@ -147,8 +186,9 @@ export function computeFeatures(frames, text) {
   const words = (text.match(/\S+/g) || []).length;
   if (frames.length < 20 || words < 3) return null;
   const rmsAll = frames.map((f) => f.rms);
-  const floor = quantile(rmsAll, 0.2);
-  const threshold = Math.max(floor * 3, 0.01);
+  // Background noise level, kept well below her speaking level so nonstop talking still counts as speech.
+  const floor = quantile(rmsAll, 0.1);
+  const threshold = Math.min(Math.max(floor * 3, 0.01), quantile(rmsAll, 0.95) * 0.25);
   const voiced = frames.map((f) => f.rms > threshold);
   const first = voiced.indexOf(true);
   const last = voiced.lastIndexOf(true);

@@ -31,6 +31,14 @@ test("features: speed, pauses, long pauses", () => {
   assert.ok(out.pitchRangeSemitones > 2);
 });
 
+test("features: nonstop fast talking still counts as speech", () => {
+  const frames = Array.from({ length: 80 }, (_, i) => ({ rms: i % 7 === 6 ? 0.03 : 0.12, pitch: 200 + (i % 5) * 5 }));
+  const out = computeFeatures(frames, Array(40).fill("word").join(" "));
+  assert.ok(out, "features should not be null");
+  assert.equal(out.wordsPerMinute, 600);
+  assert.ok(out.pausePercent < 20);
+});
+
 test("features: too little speech returns null", () => {
   assert.equal(computeFeatures([{ rms: 0.1, pitch: 200 }], "hi there friend"), null);
 });

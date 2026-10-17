@@ -12,7 +12,7 @@ Phone web app for Ellie: check in on mood, talk (voice only) to Claude using CBT
 npm install
 ANTHROPIC_API_KEY=sk-ant-... APP_PASSCODE=pick-a-long-passcode npm start
 ```
-Open http://localhost:3000. Voice needs a browser with speech recognition: Safari on iPhone, Chrome on Android or desktop. Run the safety tests with `npm test`.
+Open http://localhost:3000. Voice needs a browser with speech-to-text: Chrome or Edge on a PC, Safari on Mac or iPhone, Chrome on Android. Firefox, Brave, and Opera don't work. On a PC, click the mic or press Space to start and send. Run the safety tests with `npm test`.
 
 ## Put it online (Render example)
 Easiest: on https://render.com choose New → Blueprint, pick this repository, and enter `ANTHROPIC_API_KEY` and `APP_PASSCODE` when asked. `render.yaml` fills in everything else.

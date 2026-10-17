@@ -1,6 +1,6 @@
 import { detectRisk, stripToken, CRISIS_TOKEN } from "./crisis.js";
 import { SKILLS } from "./skills.js";
-import { VoiceSession, speechSupported, baseline } from "./voice.js";
+import { VoiceSession, voiceProblem, baseline } from "./voice.js";
 
 // ---------- storage (this phone only) ----------
 const KEYS = { profile: "steady.profile", plan: "steady.plan", log: "steady.log", chat: "steady.chat", voice: "steady.voice" };
@@ -142,36 +142,54 @@ const micBtn = $("micBtn");
 function setMic(state) {
   micBtn.classList.toggle("on", state === "listening");
   micBtn.disabled = state === "busy";
-  $("micHint").textContent = { idle: "Tap to talk", listening: "Listening... tap again to send", busy: "..." }[state];
+  $("micHint").textContent = { idle: IDLE_HINT, listening: isDesktop ? "Listening... click or press Space to send" : "Listening... tap again to send", busy: "..." }[state];
   $("cancelVoice").classList.toggle("hidden", state !== "listening");
   $("liveText").classList.toggle("hidden", state !== "listening");
 }
-if (!speechSupported()) {
+const isDesktop = matchMedia("(hover: hover) and (pointer: fine)").matches;
+const IDLE_HINT = isDesktop ? "Click or press Space to talk" : "Tap to talk";
+const VOICE_HELP = {
+  insecure: "Voice only works when the app is opened at its https:// address (or http://localhost on this computer).",
+  unsupported: "This browser can't turn speech into words. Use Chrome, Edge, or Safari. Firefox doesn't support it.",
+  network: "This browser couldn't reach its speech-to-text service. Brave and Opera block it; use Chrome, Edge, or Safari, and check the internet connection.",
+  "not-allowed": isDesktop
+    ? "The microphone is blocked. Click the icon left of the web address, allow Microphone, then try again. On Windows, also check Settings > Privacy > Microphone."
+    : "The microphone is blocked. Allow it for this app in your phone's settings, then tap the mic again.",
+  "audio-capture": "No microphone found. Plug one in, or check your computer's sound settings.",
+  "language-not-supported": "Speech-to-text doesn't support this browser's language setting.",
+};
+VOICE_HELP["service-not-allowed"] = VOICE_HELP["not-allowed"];
+const problem = voiceProblem();
+if (problem) {
   micBtn.classList.add("hidden");
-  $("micHint").textContent = "Voice isn't available in this browser. On iPhone use Safari; on Android use Chrome. Skills and your safety plan still work.";
+  $("micHint").textContent = `${VOICE_HELP[problem]} Skills and your safety plan still work.`;
 }
+else setMic("idle");
 micBtn.addEventListener("click", async () => {
   if (sending) return;
   if (!session) {
-    session = new VoiceSession({ onTranscript: (t) => ($("liveText").textContent = t || "...") });
+    session = new VoiceSession({
+      onTranscript: (t) => ($("liveText").textContent = t || "..."),
+      onFatal: (err) => {
+        session = null;
+        setMic("idle");
+        $("messages").append(bubble("note", VOICE_HELP[err] || "Voice stopped working. Try again."));
+        scrollDown();
+      },
+    });
     $("liveText").textContent = "...";
-    try {
-      await session.start();
-      setMic("listening");
-    } catch {
-      session = null;
-      setMic("idle");
-      $("messages").append(bubble("note", "I can't reach the microphone. Allow microphone access for this app in your phone's settings, then tap the mic again."));
-      scrollDown();
-    }
+    setMic("listening");
+    session.start();
     return;
   }
   setMic("busy");
-  const { text, features, error } = await session.stop();
+  const current = session;
+  const { text, features, error } = await current.stop();
+  if (session !== current) return; // a fatal error already reset the mic
   session = null;
   setMic("idle");
   if (!text) {
-    const why = error === "not-allowed" ? "Speech recognition isn't allowed. Turn it on in your phone's settings, then tap the mic again." : "I didn't catch that. Tap the mic and try again.";
+    const why = VOICE_HELP[error] || "I didn't catch that. Try the mic again, a little closer.";
     $("messages").append(bubble("note", why));
     scrollDown();
     return;
@@ -184,6 +202,13 @@ micBtn.addEventListener("click", async () => {
     save(KEYS.voice, voiceHistory);
   }
   await sendMessage(text, voice);
+});
+// On a computer, Space starts and sends a voice message.
+document.addEventListener("keydown", (e) => {
+  if (e.code !== "Space" || e.repeat || $("view-chat").classList.contains("hidden")) return;
+  if (!$("crisis").classList.contains("hidden") || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(document.activeElement?.tagName)) return;
+  e.preventDefault();
+  micBtn.click();
 });
 $("cancelVoice").addEventListener("click", () => {
   session?.cancel();
