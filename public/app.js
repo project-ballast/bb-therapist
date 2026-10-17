@@ -390,7 +390,9 @@ $("saveSettings").addEventListener("click", () => {
   save(KEYS.profile, profile);
   if (chat) renderChat();
   $("settingsMsg").textContent = "Saved.";
-  if (changed) checkSetup().then((missing) => ($("settingsMsg").textContent = missing ? "Saved, but the passcode is wrong." : "Saved. Passcode works."));
+  // Back to Chit Chat, unless the new passcode is rejected.
+  if (!changed) return openChat();
+  checkSetup().then((missing) => (missing ? ($("settingsMsg").textContent = "Saved, but the passcode is wrong.") : openChat()));
 });
 $("clearChat").addEventListener("click", () => {
   if (!confirm("Delete all chats on this phone? This can't be undone.")) return;
