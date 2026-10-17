@@ -42,10 +42,8 @@
       <h1>Settings</h1>
       <label class="label" for="s-name">My first name</label>
       <input id="s-name" type="text" autocomplete="given-name">
-      <div id="setupBox" class="hidden">
-        <label class="label" for="s-key">Setup key (only needed once on this device)</label>
-        <input id="s-key" type="password" autocomplete="off">
-      </div>
+      <label class="label" for="s-key">App passcode</label>
+      <input id="s-key" type="password" autocomplete="off">
       <label class="check"><input id="s-debugVoice" type="checkbox"> Debug: show a voice analysis before each reply (temporary testing tool)</label>
       <label class="check"><input id="s-voiceFeedback" type="checkbox"> Let the app mention how my voice sounds (for example, "you're talking faster than usual")</label>
       <button id="saveSettings" type="button" class="primary">Save</button>

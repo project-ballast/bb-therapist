@@ -331,7 +331,7 @@ async function askClaude() {
     reply.remove();
     panel?.remove();
     const msgs = {
-      passcode: "This device isn't set up yet. Open the app once from its setup link, or enter the setup key in Settings.",
+      passcode: "Enter the app passcode in Settings once, then come back to Chit Chat.",
       busy: "The app is busy. Try again in a minute.",
       offline: "No connection right now. If you need someone now, call or text 988.",
       refusal: "I couldn't answer that one. If you're struggling, call or text 988 to reach a person.",
@@ -373,6 +373,7 @@ $("crisisClose").addEventListener("click", () => $("crisis").classList.add("hidd
 // ---------- settings ----------
 function renderSettings() {
   $("s-name").value = profile.name || "";
+  $("s-key").value = profile.passcode || "";
   $("s-voiceFeedback").checked = profile.voiceFeedback !== false;
   $("s-debugVoice").checked = profile.debugVoice !== false;
   $("settingsMsg").textContent = "";
@@ -383,12 +384,13 @@ function renderSettings() {
 }
 $("saveSettings").addEventListener("click", () => {
   const key = $("s-key").value.trim();
-  if (key) profile.passcode = key;
+  const changed = key !== (profile.passcode || "");
+  profile.passcode = key;
   profile = { ...profile, name: $("s-name").value.trim(), voiceFeedback: $("s-voiceFeedback").checked, debugVoice: $("s-debugVoice").checked };
   save(KEYS.profile, profile);
   if (chat) renderChat();
   $("settingsMsg").textContent = "Saved.";
-  if (key) checkSetup();
+  if (changed) checkSetup().then((missing) => ($("settingsMsg").textContent = missing ? "Saved, but the passcode is wrong." : "Saved. Passcode works."));
 });
 $("clearChat").addEventListener("click", () => {
   if (!confirm("Delete all chats on this phone? This can't be undone.")) return;
@@ -399,7 +401,7 @@ $("clearChat").addEventListener("click", () => {
 $("clearAll").addEventListener("click", () => {
   if (!confirm("Erase your conversations, voice history, and name from this phone? You won't be able to get them back.")) return;
   Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
-  if (profile.passcode) save(KEYS.profile, { passcode: profile.passcode }); // keep the hidden setup key so the app still works
+  if (profile.passcode) save(KEYS.profile, { passcode: profile.passcode }); // keep the passcode so the app still works
   location.reload();
 });
 
@@ -410,14 +412,12 @@ function checkSetup() {
   return fetch("/api/check", { method: "POST", headers: { "X-App-Passcode": profile.passcode || "" } })
     .then((r) => {
       const missing = r.status === 401;
-      $("setupBox").classList.toggle("hidden", !missing);
-      $("s-key").value = "";
       return missing;
     })
     .catch(() => false);
 }
 checkSetup().then((missing) => {
-  if (missing) $("messages").append(bubble("note", "This device isn't set up yet. Open the app once from its setup link, or enter the setup key in Settings."));
+  if (missing) $("messages").append(bubble("note", "Enter the app passcode in Settings once, then come back to Chit Chat."));
 });
 [KEYS.log, KEYS.plan].forEach((k) => localStorage.removeItem(k)); // removed check-in log and safety plan
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
