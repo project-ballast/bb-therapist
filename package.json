@@ -1,0 +1,15 @@
+{
+  "name": "steady",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Mood-episode support app for one person, using CBT and DBT skills with Claude.",
+  "scripts": {
+    "start": "node server/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0"
+  }
+}

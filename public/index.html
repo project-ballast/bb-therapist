@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#3d6b63">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Steady">
+  <title>Steady</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg">
+  <link rel="apple-touch-icon" href="/icon.svg">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="top">
+    <span class="brand">Steady</span>
+    <button id="helpBtn" class="help-btn" type="button">Help now</button>
+  </header>
+
+  <main>
+    <!-- Check-in -->
+    <section id="view-checkin" class="view">
+      <h1 id="greeting">How are you right now?</h1>
+      <div class="card">
+        <label for="mood" class="label">Mood <span id="moodVal" class="pill">0</span></label>
+        <input id="mood" type="range" min="-5" max="5" step="1" value="0">
+        <div class="scale"><span>-5 very low</span><span>0 okay</span><span>+5 very high</span></div>
+        <label for="sleep" class="label">Hours slept last night</label>
+        <input id="sleep" type="number" inputmode="decimal" min="0" max="24" step="0.5" placeholder="e.g. 7">
+      </div>
+      <p class="label">What fits best?</p>
+      <div class="states">
+        <button type="button" class="state" data-state="low"><b>Low</b><span>heavy, flat, hopeless, slowed down</span></button>
+        <button type="button" class="state" data-state="high"><b>High / racing</b><span>wired, fast thoughts, little sleep, big ideas</span></button>
+        <button type="button" class="state" data-state="mixed"><b>Mixed</b><span>low mood but agitated, restless, can't settle</span></button>
+        <button type="button" class="state" data-state="anxious"><b>Anxious</b><span>worried, tense, panicky</span></button>
+        <button type="button" class="state" data-state="unsure"><b>Not sure</b><span>help me figure it out</span></button>
+      </div>
+      <button id="resumeBtn" type="button" class="link hidden">Continue last conversation</button>
+    </section>
+
+    <!-- Chat -->
+    <section id="view-chat" class="view hidden">
+      <div id="chatSkills" class="chips"></div>
+      <div id="messages" class="messages" aria-live="polite"></div>
+      <form id="chatForm" class="composer">
+        <textarea id="input" rows="1" placeholder="Type what's going on..." aria-label="Message"></textarea>
+        <button id="sendBtn" type="submit" class="send">Send</button>
+      </form>
+      <button id="newChatBtn" type="button" class="link">New check-in</button>
+    </section>
+
+    <!-- Skills -->
+    <section id="view-skills" class="view hidden">
+      <h1>Skills</h1>
+      <div class="chips" id="skillFilter"></div>
+      <div id="skillList"></div>
+    </section>
+
+    <!-- Safety plan -->
+    <section id="view-plan" class="view hidden">
+      <h1>My safety plan</h1>
+      <p class="muted">Fill this in when you feel steady, ideally with your therapist. It shows up when you need it.</p>
+      <form id="planForm">
+        <label class="label" for="p-warningSigns">1. My warning signs</label>
+        <textarea id="p-warningSigns" rows="3" placeholder="e.g. sleeping under 6 hours, spending, not answering texts"></textarea>
+        <label class="label" for="p-copingSkills">2. Things I can do on my own</label>
+        <textarea id="p-copingSkills" rows="3" placeholder="e.g. cold shower, walk the dog, music"></textarea>
+        <label class="label" for="p-places">3. People and places that distract me</label>
+        <textarea id="p-places" rows="2" placeholder="e.g. coffee shop, sister's house"></textarea>
+        <p class="label">4. People I can ask for help</p>
+        <div id="helpers"></div>
+        <button type="button" class="link" id="addHelper">+ Add person</button>
+        <p class="label">5. My care team</p>
+        <div id="pros"></div>
+        <button type="button" class="link" id="addPro">+ Add professional</button>
+        <label class="label" for="p-safeEnvironment">6. Making my space safe</label>
+        <textarea id="p-safeEnvironment" rows="2" placeholder="e.g. ask someone I trust to hold extra medication"></textarea>
+        <label class="label" for="p-reasonsToLive">My reasons for living</label>
+        <textarea id="p-reasonsToLive" rows="2"></textarea>
+        <label class="label" for="p-spendingLimit">Big-decision spending limit (48-hour rule)</label>
+        <input id="p-spendingLimit" type="text" placeholder="e.g. $200">
+        <button type="submit" class="primary">Save plan</button>
+        <span id="planSaved" class="muted hidden">Saved on this phone.</span>
+      </form>
+    </section>
+
+    <!-- Log -->
+    <section id="view-log" class="view hidden">
+      <h1>Mood log</h1>
+      <div id="sleepWarn" class="warn hidden"></div>
+      <div id="logChart" class="chart"></div>
+      <ul id="logList" class="log"></ul>
+      <button id="exportBtn" type="button" class="primary">Export for my care team (CSV)</button>
+    </section>
+
+    <!-- Settings -->
+    <section id="view-settings" class="view hidden">
+      <h1>Settings</h1>
+      <label class="label" for="s-name">My first name</label>
+      <input id="s-name" type="text" autocomplete="given-name">
+      <label class="label" for="s-passcode">App passcode</label>
+      <input id="s-passcode" type="password" autocomplete="off">
+      <button id="saveSettings" type="button" class="primary">Save</button>
+      <span id="settingsMsg" class="muted"></span>
+      <div class="card">
+        <p><b>Privacy.</b> Your chats, plan, and log are stored only on this phone. To reply, messages pass through Anthropic (the company behind Claude) and are not stored by this app's server. Clearing your browser data erases everything here.</p>
+        <p><b>This is not a therapist or a crisis service.</b> In an emergency call 911. To talk to someone now, call or text 988.</p>
+      </div>
+      <button id="clearChat" type="button" class="danger-outline">Delete all chats</button>
+      <button id="clearAll" type="button" class="danger-outline">Delete everything on this phone</button>
+    </section>
+  </main>
+
+  <nav class="tabs">
+    <button type="button" data-view="checkin">Talk</button>
+    <button type="button" data-view="skills">Skills</button>
+    <button type="button" data-view="plan">Plan</button>
+    <button type="button" data-view="log">Log</button>
+    <button type="button" data-view="settings">Settings</button>
+  </nav>
+
+  <!-- Crisis panel -->
+  <div id="crisis" class="crisis hidden" role="dialog" aria-modal="true" aria-labelledby="crisisTitle">
+    <div class="crisis-box">
+      <h2 id="crisisTitle">You don't have to get through this alone</h2>
+      <p>Talk to a real person right now. It's free, 24/7.</p>
+      <a class="big call" href="tel:988">Call 988</a>
+      <a class="big text" href="sms:988">Text 988</a>
+      <div id="crisisPeople"></div>
+      <a class="big emergency" href="tel:911">Emergency: call 911</a>
+      <div id="crisisPlan" class="crisis-plan"></div>
+      <button id="crisisClose" type="button" class="link">I'm safe right now</button>
+    </div>
+  </div>
+</body>
+</html>
