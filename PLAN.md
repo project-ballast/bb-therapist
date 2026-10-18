@@ -50,6 +50,7 @@ She closes it with "Back to the conversation". No contacts, safety plan, or manu
 7. **Word list false alarms.** "This traffic is killing me" can trigger the panel. That is a deliberate trade: a false alarm costs 2 seconds; a miss could cost much more.
 
 8. **Voice limits.** Voice numbers are hints. In a 2016 study of 28 people with bipolar disorder, voice features scored 0.89 (manic or mixed) and 0.78 (depressed) on a 0.5 = coin-flip, 1.0 = perfect scale, measured against each person's own normal (Faurholt-Jepsen et al., Translational Psychiatry). Noise, a cold, or whispering skews them. Her baseline builds from recordings at mood 5-6 (3 needed) or any 5 recordings.
+10. **Phone voice goes through OpenAI.** On phones, the browser's speech-to-text conflicts with the mic meter (and fails in iPhone home-screen apps), so the app records audio and the server sends it to OpenAI (`gpt-4o-mini-transcribe`, about $0.003 per minute) to get words. Audio is not saved by the app; it is one more company that sees it. No live words appear while she talks.
 9. **Voice only means no fallback.** If she can't speak (other people around) or the mic fails, the check-in can't happen that day.
 
 ## What I'd do next (in order)

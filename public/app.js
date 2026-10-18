@@ -190,7 +190,7 @@ const isDesktop = matchMedia("(hover: hover) and (pointer: fine)").matches;
 const IDLE_HINT = isDesktop ? "Click or press Space to talk" : "Tap to talk";
 const VOICE_HELP = {
   insecure: "Voice only works when the app is opened at its https:// address (or http://localhost on this computer).",
-  unsupported: "This browser can't turn speech into words. Use Chrome, Edge, or Safari. Firefox doesn't support it.",
+  unsupported: "This browser can't record audio. Use Chrome, Edge, or Safari.",
   network: "This browser couldn't reach its speech-to-text service. Brave and Opera block it; use Chrome, Edge, or Safari, and check the internet connection.",
   "not-allowed": isDesktop
     ? "The microphone is blocked. Click the icon left of the web address, allow Microphone, then try again. On Windows, also check Settings > Privacy > Microphone."
@@ -199,6 +199,13 @@ const VOICE_HELP = {
   "language-not-supported": "Speech-to-text doesn't support this browser's language setting.",
 };
 VOICE_HELP["service-not-allowed"] = VOICE_HELP["not-allowed"];
+Object.assign(VOICE_HELP, {
+  "no-transcriber": "Voice on phones needs one more setting on the server (OPENAI_API_KEY). Ask Derek to add it.",
+  transcribe: "Couldn't turn that recording into words. Check the internet connection and try again.",
+  passcode: "Enter the app passcode in Settings once, then come back to Chit Chat.",
+  busy: "Too many messages in a short time. Wait a minute and try again.",
+  "record-failed": "The microphone didn't start. Close the app fully, reopen it, and try again.",
+});
 const problem = voiceProblem();
 if (problem) {
   micBtn.classList.add("hidden");
@@ -210,6 +217,7 @@ micBtn.addEventListener("click", async () => {
   if (!session) {
     session = new VoiceSession({
       onTranscript: (t) => ($("liveText").textContent = t || "..."),
+      transcribe: transcribeAudio,
       onFatal: (err) => {
         session = null;
         setMic("idle");
@@ -243,6 +251,17 @@ micBtn.addEventListener("click", async () => {
   }
   await sendMessage(text, voice);
 });
+// iPhone path: send the recording to the server to be turned into words.
+async function transcribeAudio(blob) {
+  const r = await fetch("/api/transcribe", {
+    method: "POST",
+    headers: { "Content-Type": blob.type || "audio/mp4", "X-App-Passcode": profile.passcode || "", "X-Speech-Lang": (navigator.language || "en").slice(0, 2) },
+    body: blob,
+  });
+  if (r.ok) return (await r.json()).text;
+  const err = (await r.json().catch(() => ({}))).error;
+  throw new Error(r.status === 401 ? "passcode" : err === "no-transcriber" ? "no-transcriber" : err === "rate" ? "busy" : "transcribe");
+}
 // On a computer, Space starts and sends a voice message.
 document.addEventListener("keydown", (e) => {
   if (e.code !== "Space" || e.repeat || $("view-chat").classList.contains("hidden")) return;

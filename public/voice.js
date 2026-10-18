@@ -1,6 +1,7 @@
 // Voice input: speech-to-text plus simple on-phone voice measurements.
-// Raw audio never leaves this file; only the transcript and a few numbers do.
-// Note: the browser's speech-to-text may send audio to Apple or Google to transcribe it.
+// On computers, raw audio never leaves this file; only the transcript and a few numbers do
+// (the browser's own speech-to-text may send audio to Google or Apple). On phones, the recording is
+// sent once to the app's server, which has OpenAI turn it into words; it is not saved.
 
 const FRAME_MS = 50;
 const MIN_HZ = 75;
@@ -8,20 +9,39 @@ const MAX_HZ = 400;
 
 const Recognition = typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
 
+// Phones (iPhone, iPad, Android): the browser's speech-to-text fights with the mic meter for the
+// microphone, and fails in iPhone home-screen apps, so there the app records audio itself and the
+// server turns it into words.
+const isMobile =
+  typeof navigator !== "undefined" &&
+  (/iPhone|iPad|iPod|Android/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+const canRecord = typeof window !== "undefined" && !!window.MediaRecorder && !!navigator.mediaDevices?.getUserMedia;
+export const useServerSpeech = isMobile || !Recognition;
+
 // Why voice can't work here, or null if it should.
 export function voiceProblem() {
   if (!window.isSecureContext) return "insecure";
-  if (!Recognition) return "unsupported";
+  if (useServerSpeech ? !canRecord : !Recognition) return "unsupported";
   return null;
+}
+
+function recorderType() {
+  for (const t of ["audio/mp4", "audio/webm;codecs=opus", "audio/webm", "audio/ogg"]) {
+    if (MediaRecorder.isTypeSupported?.(t)) return t;
+  }
+  return "";
 }
 
 // Errors that end a recording; others (like a few seconds of silence) are recoverable.
 const FATAL = new Set(["not-allowed", "service-not-allowed", "network", "audio-capture", "language-not-supported", "bad-grammar"]);
 
 export class VoiceSession {
-  constructor({ onTranscript, onFatal } = {}) {
+  // transcribe(blob) -> text is only used when useServerSpeech is true.
+  constructor({ onTranscript, onFatal, transcribe } = {}) {
     this.onTranscript = onTranscript || (() => {});
     this.onFatal = onFatal || (() => {});
+    this.transcribe = transcribe;
+    this.server = useServerSpeech;
     this.frames = []; // {rms, pitch}
     this.finalText = "";
     this.interim = "";
@@ -38,11 +58,33 @@ export class VoiceSession {
     } catch {
       this.ctx = null;
     }
+    if (this.server) {
+      // Recording is the whole message here, so a mic failure ends it.
+      this.startMeter().catch((err) => {
+        if (!this.active) return;
+        this.error = err?.name === "NotAllowedError" ? "not-allowed" : err?.name === "NotFoundError" ? "audio-capture" : "record-failed";
+        this.cancel();
+        this.onFatal(this.error);
+      });
+      return;
+    }
     this.startRecognition();
     // Voice measurements are optional; the message still works without them.
     this.startMeter().catch(() => {
       this.meterFailed = true;
     });
+  }
+
+  // Records from the same mic stream the meter uses, so only one thing holds the mic.
+  startRecorder() {
+    const type = recorderType();
+    this.recorder = new MediaRecorder(this.stream, type ? { mimeType: type } : undefined);
+    this.chunks = [];
+    this.recorder.ondataavailable = (e) => e.data?.size && this.chunks.push(e.data);
+    this.recorded = new Promise((resolve) => (this.recorder.onstop = resolve));
+    this.recorder.start(1000);
+    this.startedAt = Date.now();
+    this.onTranscript("Listening... your words appear after you send.");
   }
 
   async startMeter() {
@@ -54,7 +96,11 @@ export class VoiceSession {
       this.stream.getTracks().forEach((t) => t.stop());
       return;
     }
-    if (!this.ctx) throw new Error("no audio context");
+    if (this.server) this.startRecorder();
+    if (!this.ctx) {
+      if (this.server) return; // still record words, just without measurements
+      throw new Error("no audio context");
+    }
     if (this.ctx.state === "suspended") await this.ctx.resume();
     const src = this.ctx.createMediaStreamSource(this.stream);
     this.analyser = this.ctx.createAnalyser();
@@ -119,6 +165,7 @@ export class VoiceSession {
   async stop() {
     this.active = false;
     clearInterval(this.timer);
+    if (this.server) return this.stopServer();
     const ended = new Promise((resolve) => {
       this.recEnded = resolve;
       setTimeout(resolve, 1500); // don't hang if the browser never fires 'end'
@@ -135,9 +182,34 @@ export class VoiceSession {
     return { text, features: computeFeatures(this.frames, text), error: this.error || null };
   }
 
+  async stopServer() {
+    let text = "";
+    if (this.recorder && this.recorder.state !== "inactive") {
+      this.recorder.stop();
+      await Promise.race([this.recorded, new Promise((r) => setTimeout(r, 2000))]);
+    }
+    this.stream?.getTracks().forEach((t) => t.stop());
+    this.ctx?.close().catch(() => {});
+    const type = (this.recorder?.mimeType || "audio/mp4").split(";")[0];
+    const blob = new Blob(this.chunks || [], { type });
+    if (blob.size && !this.error) {
+      try {
+        text = (await this.transcribe(blob)) || "";
+      } catch (err) {
+        this.error = err?.message || "transcribe";
+      }
+    }
+    return { text, features: computeFeatures(this.frames, text), error: this.error || null };
+  }
+
   cancel() {
     this.active = false;
     clearInterval(this.timer);
+    try {
+      if (this.recorder?.state === "recording") this.recorder.stop();
+    } catch {
+      /* already stopped */
+    }
     try {
       this.rec?.abort();
     } catch {

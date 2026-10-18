@@ -12,7 +12,7 @@ Phone web app for Ellie's daily check-ins: she talks (voice only) to Claude, whi
 npm install
 ANTHROPIC_API_KEY=sk-ant-... APP_PASSCODE=pick-a-long-passcode npm start
 ```
-Open http://localhost:3000. Voice needs a browser with speech-to-text: Chrome or Edge on a PC, Safari on Mac or iPhone, Chrome on Android. Firefox, Brave, and Opera don't work. On a PC, click the mic or press Space to start and send. Run the safety tests with `npm test`.
+Open http://localhost:3000. Voice: Chrome or Edge on a PC uses the browser's free speech-to-text. Phones (iPhone, iPad, Android, in the browser or as a home-screen app) and Firefox record audio and the server sends it to OpenAI to turn into words, which needs `OPENAI_API_KEY` (about $0.003 per minute of speech). Brave and Opera don't work. On a PC, click the mic or press Space to start and send. Run the safety tests with `npm test`.
 
 ## Put it online (Render example)
 Easiest: on https://render.com choose New → Blueprint, pick this repository, and enter `ANTHROPIC_API_KEY` and `APP_PASSCODE` when asked. `render.yaml` fills in everything else.
@@ -20,7 +20,7 @@ Easiest: on https://render.com choose New → Blueprint, pick this repository, a
 Or set up a Web Service by hand:
 1. New → Web Service → pick this repository.
 2. Build Command: `npm install` (not `start`). Start Command: `npm start`.
-3. Add environment variables: `ANTHROPIC_API_KEY` and `APP_PASSCODE`.
+3. Add environment variables: `ANTHROPIC_API_KEY`, `APP_PASSCODE`, and `OPENAI_API_KEY` (for voice on phones).
 4. Deploy, then open the `https://...onrender.com` address on Ellie's phone.
 5. Add to home screen: iPhone Safari → Share → Add to Home Screen. Android Chrome → menu → Add to Home screen.
 6. Enter the passcode once in Settings → App passcode. Shortcut: open `https://<your-app>.onrender.com/#key=<APP_PASSCODE>` and it fills it in for you.
@@ -33,6 +33,8 @@ Note: Render's free tier sleeps after about 15 minutes idle, so the first reply 
 | `ANTHROPIC_API_KEY` | none | Required |
 | `APP_PASSCODE` | none | Strongly recommended. Entered once in Settings (or via `/#key=<APP_PASSCODE>`). Without it anyone with the URL can use your key |
 | `DAILY_LIMIT` | `300` | Max chat replies per day, all users together |
+| `OPENAI_API_KEY` | none | Needed for voice on phones. Get one at https://platform.openai.com/api-keys |
+| `TRANSCRIBE_MODEL` | `gpt-4o-mini-transcribe` | OpenAI speech-to-text model |
 | `CLAUDE_MODEL` | `claude-opus-5-5` | Model used for chat |
 | `CLAUDE_EFFORT` | `medium` | `low` is faster and cheaper; `high` thinks harder |
 | `PORT` | `3000` | |
