@@ -17,9 +17,10 @@ A phone app Ellie uses for a short daily check-in (Derek, 2026-10-17: "not a too
 ## How it works
 
 1. **No check-in screen**: Chit Chat (the first tab) opens straight into the conversation, with an optional 1-10 mood scale at the top (1 very low, 5-6 okay, 10 very high). Claude works out her state from that, her words, and her voice, and asks about sleep.
-2. **Voice chat (no typing)**: she taps the mic and talks. Her phone turns speech into words and measures 4 things on its own: speaking speed, pauses, pitch range, and loudness, compared to her usual. Claude gets the words, those numbers, her state, sleep, warning signs, and her favorite skills, and coaches to fit. Recordings are never saved or uploaded by the app; only the words and numbers leave the phone. The phone's own speech-to-text may send audio to Apple or Google.
-3. No safety plan or emergency contacts (removed 2026-10-17).
-4. No mood or sleep log is kept and there is no export (Skills, Plan, Log tabs and the check-in page removed 2026-10-17). Her usual voice is the median of recordings made at mood 5-6 (3 needed), otherwise of all recordings once there are 5.
+2. **The check-in loop** (Derek, 2026-10-19): mood 1-10 at the top, then "How are you feeling?", then "Would you like to vent, or do an exercise to help?". After the vent or exercise Claude asks "How do you feel now?" and the app shows a 1-10 picker (Claude sends a hidden [[MOOD]] flag). Her tap is sent as her answer, then "Would you like to talk or do an exercise to help?" and the loop repeats. Safety overrides the loop.
+3. **Voice chat (no typing)**: she taps the mic and talks. Her phone turns speech into words and measures 4 things on its own: speaking speed, pauses, pitch range, and loudness, compared to her usual. Claude gets the words, those numbers, her state, sleep, warning signs, and her favorite skills, and coaches to fit. Recordings are never saved or uploaded by the app; only the words and numbers leave the phone. The phone's own speech-to-text may send audio to Apple or Google.
+4. No safety plan or emergency contacts (removed 2026-10-17).
+5. No mood or sleep log is kept and there is no export (Skills, Plan, Log tabs and the check-in page removed 2026-10-17). Her usual voice is the median of recordings made at mood 5-6 (3 needed), otherwise of all recordings once there are 5.
 
 ## How the coaching changes by state
 

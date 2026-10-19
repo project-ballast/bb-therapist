@@ -23,4 +23,6 @@ test("strips crisis token, including a half-streamed one", () => {
   assert.equal(stripToken("Please call 988.\n[[CRISIS]]"), "Please call 988.");
   assert.equal(stripToken("Please call 988.\n[[CRI"), "Please call 988.");
   assert.equal(stripToken("No token here."), "No token here.");
+  assert.equal(stripToken("How do you feel now?\n[[MOOD]]"), "How do you feel now?");
+  assert.equal(stripToken("How do you feel now?\n[[MO"), "How do you feel now?");
 });

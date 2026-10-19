@@ -35,15 +35,19 @@ export function detectRisk(text) {
 }
 
 export const CRISIS_TOKEN = "[[CRISIS]]";
+// Not a risk flag: asks the app to show the 1-10 "How do you feel now?" picker.
+export const MOOD_TOKEN = "[[MOOD]]";
+const TOKENS = [CRISIS_TOKEN, MOOD_TOKEN];
 
-// Removes the AI's hidden flag, plus a half-streamed flag at the very end.
+// Removes the AI's hidden flags, plus a half-streamed flag at the very end.
 export function stripToken(text) {
-  let out = String(text).split(CRISIS_TOKEN).join("");
-  for (let i = CRISIS_TOKEN.length - 1; i > 1; i--) {
-    if (out.endsWith(CRISIS_TOKEN.slice(0, i))) {
-      out = out.slice(0, -i);
-      break;
+  let out = String(text);
+  for (const t of TOKENS) out = out.split(t).join("");
+  out = out.trimEnd();
+  for (const t of TOKENS) {
+    for (let i = t.length - 1; i > 1; i--) {
+      if (out.endsWith(t.slice(0, i))) return out.slice(0, -i).trimEnd();
     }
   }
-  return out.trimEnd();
+  return out;
 }

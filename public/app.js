@@ -1,4 +1,4 @@
-import { detectRisk, stripToken, CRISIS_TOKEN } from "./crisis.js";
+import { detectRisk, stripToken, CRISIS_TOKEN, MOOD_TOKEN } from "./crisis.js";
 import { VoiceSession, voiceProblem, baseline, describeVoice } from "./voice.js";
 
 // ---------- storage (this phone only) ----------
@@ -28,7 +28,7 @@ const el = (tag, cls, text) => {
 };
 
 const opener = () =>
-  `${profile.name ? `Hi ${profile.name}. ` : "Hi. "}How are you doing today?`;
+  `${profile.name ? `Hi ${profile.name}. ` : "Hi. "}How are you feeling?`;
 
 let profile = load(KEYS.profile, { name: "", passcode: "" });
 // One-time setup link: https://<app>/#key=<APP_PASSCODE> saves the key on this device, then hides it.
@@ -77,22 +77,41 @@ $("newChatBtn").addEventListener("click", () => {
 // ---------- chat ----------
 // ---------- mood scale (1 very low, 5-6 okay, 10 very high / wired) ----------
 const moodScale = $("moodScale");
-for (let n = 1; n <= 10; n++) {
-  const b = el("button", "mood-btn", String(n));
-  b.type = "button";
-  b.dataset.mood = n;
-  b.setAttribute("aria-label", `Mood ${n} of 10`);
-  b.addEventListener("click", () => {
-    if (!chat) return;
-    chat.mood = n;
-    chat.moodAt = new Date().toISOString();
-    save(KEYS.chat, chat);
-    renderMood();
-  });
-  moodScale.append(b);
+function setMood(n) {
+  chat.mood = n;
+  chat.moodAt = new Date().toISOString();
+  save(KEYS.chat, chat);
+  renderMood();
 }
+function moodButtons(box, onPick) {
+  for (let n = 1; n <= 10; n++) {
+    const b = el("button", "mood-btn", String(n));
+    b.type = "button";
+    b.dataset.mood = n;
+    b.setAttribute("aria-label", `Mood ${n} of 10`);
+    b.addEventListener("click", () => onPick(n));
+    box.append(b);
+  }
+}
+moodButtons(moodScale, (n) => chat && setMood(n));
 function renderMood() {
   moodScale.querySelectorAll(".mood-btn").forEach((b) => b.classList.toggle("on", Number(b.dataset.mood) === chat?.mood));
+}
+
+// "How do you feel now?" after a vent or an exercise: Claude ends its reply with [[MOOD]].
+// Tapping a number updates her mood and sends it as her answer, which restarts the loop.
+function moodCheck() {
+  const box = el("div", "moodcheck");
+  box.append(el("div", "moodbar-head", "How do you feel now? 1 very low · 5-6 okay · 10 very high"));
+  const row = el("div", "mood-scale");
+  moodButtons(row, (n) => {
+    if (sending) return;
+    box.remove();
+    setMood(n);
+    sendMessage(`My mood now: ${n} out of 10.`, null);
+  });
+  box.append(row);
+  return box;
 }
 
 function renderChat() {
@@ -104,6 +123,8 @@ function renderChat() {
     if (m.role === "assistant" && i > 0 && debugOn()) box.append(debugPanel(msgs[i - 1], m.analysis));
     box.append(bubble(m.role, m.role === "assistant" ? stripToken(m.content) : m.content));
   });
+  const last = msgs[msgs.length - 1];
+  if (last?.role === "assistant" && last.content.includes(MOOD_TOKEN)) box.append(moodCheck());
 }
 function bubble(role, text) {
   return el("div", `msg ${role}`, text);
@@ -276,6 +297,7 @@ $("cancelVoice").addEventListener("click", () => {
 });
 
 async function sendMessage(text, voice) {
+  document.querySelectorAll(".moodcheck").forEach((n) => n.remove()); // she answered another way
   if (detectRisk(text)) openCrisis(); // before any network call
   const msg = { role: "user", content: text };
   if (voice) msg.voice = voice;
@@ -346,6 +368,10 @@ async function askClaude() {
   }
 
   if (full.includes(CRISIS_TOKEN)) openCrisis();
+  if (!failed && full.includes(MOOD_TOKEN)) {
+    $("messages").append(moodCheck());
+    scrollDown();
+  }
   if (failed) {
     reply.remove();
     panel?.remove();

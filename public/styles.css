@@ -161,3 +161,5 @@ textarea { resize: vertical; }
   font-weight: 700; cursor: pointer; padding: 0;
 }
 .mood-btn.on { background: var(--accent); color: var(--on-strong); border-color: var(--accent); }
+.moodcheck { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; margin: 4px 0 8px; }
+.moodcheck .moodbar-head { font-weight: 600; font-size: 15px; margin-bottom: 8px; }
