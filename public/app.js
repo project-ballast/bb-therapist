@@ -77,8 +77,11 @@ $("newChatBtn").addEventListener("click", () => {
 // ---------- chat ----------
 // ---------- mood scale (1 very low, 5-6 okay, 10 very high / wired) ----------
 const moodScale = $("moodScale");
-function setMood(n) {
+// chat.mood is her latest number (sent to Claude); chat.startMood is the one tapped in the top bar,
+// which stays put so a later "How do you feel now?" pick doesn't rewrite it.
+function setMood(n, { top = false } = {}) {
   chat.mood = n;
+  if (top) chat.startMood = n;
   chat.moodAt = new Date().toISOString();
   save(KEYS.chat, chat);
   renderMood();
@@ -93,9 +96,10 @@ function moodButtons(box, onPick) {
     box.append(b);
   }
 }
-moodButtons(moodScale, (n) => chat && setMood(n));
+moodButtons(moodScale, (n) => chat && setMood(n, { top: true }));
 function renderMood() {
-  moodScale.querySelectorAll(".mood-btn").forEach((b) => b.classList.toggle("on", Number(b.dataset.mood) === chat?.mood));
+  const shown = chat?.startMood ?? chat?.mood;
+  moodScale.querySelectorAll(".mood-btn").forEach((b) => b.classList.toggle("on", Number(b.dataset.mood) === shown));
 }
 
 // "How do you feel now?" after a vent or an exercise: Claude ends its reply with [[MOOD]].
