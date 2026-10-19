@@ -1,8 +1,8 @@
 # Calm like a Potato: a daily mood check-in app
 
-A web app anyone can use on a laptop or PC for a short daily check-in (Derek, 2026-10-17: "not a tool to be used in a crisis"; 2026-10-19: for anyone, not one person, with gender-neutral wording). The user talks to it by voice. It coaches them through skills from two proven talk therapies: cognitive behavioral therapy (spotting and testing unhelpful thoughts) and dialectical behavior therapy (skills for riding out strong emotions and urges).
+A web app for people who live with bipolar disorder (anyone may use it), on a laptop or PC, for a short daily check-in (Derek, 2026-10-17: "not a tool to be used in a crisis"; 2026-10-19: for anyone, not one person, with gender-neutral wording). The user talks to it by voice. It coaches them through skills from two proven talk therapies: cognitive behavioral therapy (spotting and testing unhelpful thoughts) and dialectical behavior therapy (skills for riding out strong emotions and urges).
 
-**What it is not:** a therapist, a doctor, or a crisis tool. It sits beside a person's care team if they have one. It never gives medication advice.
+**What it is not:** a therapist, a doctor, or a crisis tool. It sits beside the person's care team. It never gives medication advice.
 
 ## Decisions made (change any of them)
 
@@ -27,8 +27,8 @@ A web app anyone can use on a laptop or PC for a short daily check-in (Derek, 20
 | State | What Claude does | Main skills |
 |---|---|---|
 | **Low (depressive)** | Warm, slow, very small steps. Does not argue with feelings. Checks safety gently. | Behavioral activation (one 5-minute action), thought record, self-soothe, opposite action |
-| **High / racing** | Short, calm sentences. Does not match their energy. Does not cheer big plans or fight them. Focuses on sleep, cutting stimulation, and waiting before big decisions. Asks about spending, driving, substances, sex, and sleep. | 48-hour rule on big decisions, wind-down for sleep, STOP skill, check the facts, see a doctor if sleep is under 6 hours for 2+ nights |
-| **Mixed** | Treated as the **highest risk** state. Checks safety early. Brings down body arousal first, talk later. Encourages reaching a doctor, care team, or trusted person today. | TIPP (cold water, intense exercise, paced breathing, muscle relaxation) |
+| **High / racing (manic or hypomanic)** | Short, calm sentences. Does not match their energy. Does not cheer big plans or fight them. Focuses on sleep, cutting stimulation, and waiting before big decisions. Asks about spending, driving, substances, sex, and sleep. | 48-hour rule on big decisions, wind-down for sleep, STOP skill, check the facts, call prescriber if sleep is under 6 hours for 2+ nights |
+| **Mixed** | Treated as the **highest risk** state. Checks safety early. Brings down body arousal first, talk later. Pushes to contact their care team today. | TIPP (cold water, intense exercise, paced breathing, muscle relaxation) |
 | **Anxious** | Grounding first, then thought work | Paced breathing, 5-4-3-2-1 grounding, thought record |
 
 ## If risk comes up (minimal safety net)

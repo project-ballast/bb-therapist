@@ -1,6 +1,6 @@
 # Calm like a Potato
 
-Web app for daily mood check-ins, for anyone, on a laptop or PC only for now: you talk (voice only) to Claude, which uses CBT and DBT skills and in-browser voice measurements (speed, pauses, pitch range, loudness) compared to your usual. It is not a crisis tool; if risk is detected it shows the 988 Lifeline. The plan and risks are in `PLAN.md`.
+Web app for daily mood check-ins for people who live with bipolar disorder (anyone may use it), on a laptop or PC only for now: you talk (voice only) to Claude, which uses CBT and DBT skills and in-browser voice measurements (speed, pauses, pitch range, loudness) compared to your usual. It is not a crisis tool; if risk is detected it shows the 988 Lifeline. The plan and risks are in `PLAN.md`.
 
 ## What you need
 - An Anthropic API key: https://console.anthropic.com → API Keys. Set a monthly spend limit there (for example $25).
