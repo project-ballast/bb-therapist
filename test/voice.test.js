@@ -59,10 +59,10 @@ test("baseline prefers steady-mood recordings", () => {
   assert.equal(baseline(ten).fromSteadyDays, true);
 });
 
-test("context tells Claude speed vs her usual", () => {
+test("context tells Claude speed vs their usual", () => {
   const ctx = buildContext({
     voice: { latest: { wordsPerMinute: 210, pausePercent: 5, longPauses: 0, seconds: 12 }, baseline: { wordsPerMinute: 150, pausePercent: 20, samples: 4, fromSteadyDays: true }, feedback: false },
   });
-  assert.match(ctx, /210 words\/min \(her usual 150 words\/min, \+40%\)/);
+  assert.match(ctx, /210 words\/min \(their usual 150 words\/min, \+40%\)/);
   assert.match(ctx, /Voice feedback .*: off/);
 });

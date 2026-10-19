@@ -193,7 +193,7 @@ export function computeFeatures(frames, text) {
   const words = (text.match(/\S+/g) || []).length;
   if (frames.length < 20 || words < 3) return null;
   const rmsAll = frames.map((f) => f.rms);
-  // Background noise level, kept well below her speaking level so nonstop talking still counts as speech.
+  // Background noise level, kept well below their speaking level so nonstop talking still counts as speech.
   const floor = quantile(rmsAll, 0.1);
   const threshold = Math.min(Math.max(floor * 3, 0.01), quantile(rmsAll, 0.95) * 0.25);
   const voiced = frames.map((f) => f.rms > threshold);
@@ -205,7 +205,7 @@ export function computeFeatures(frames, text) {
   const voicedSec = (span.filter(Boolean).length * FRAME_MS) / 1000;
   if (voicedSec < 1.5) return null;
 
-  // Silent stretches of 2+ seconds inside her speech.
+  // Silent stretches of 2+ seconds inside their speech.
   let longPauses = 0;
   let run = 0;
   for (const v of span) {
@@ -268,7 +268,7 @@ export function describeVoice(f, base) {
     return null;
   };
   const pace =
-    rel(f.wordsPerMinute, base?.wordsPerMinute, 0.2, 0.2, ["slower than usual", "her usual pace", "faster than usual"]) ||
+    rel(f.wordsPerMinute, base?.wordsPerMinute, 0.2, 0.2, ["slower than usual", "their usual pace", "faster than usual"]) ||
     (f.wordsPerMinute < 110 ? "slow" : f.wordsPerMinute > 170 ? "fast" : "average");
   const pauses = f.pausePercent >= 40 || f.longPauses >= 2 ? "many pauses" : f.pausePercent <= 10 ? "almost no pauses" : "normal pauses";
   const pitch = typeof f.pitchRangeSemitones !== "number" ? "pitch not measured" : f.pitchRangeSemitones < 3 ? "flat, monotone" : f.pitchRangeSemitones > 9 ? "very lively pitch" : "normal pitch movement";
@@ -288,11 +288,11 @@ export function describeVoice(f, base) {
       ["Loudness", typeof f.loudnessDb === "number" ? `${f.loudnessDb} dB (relative to this mic)` : "not measured"],
     ],
     summary: [pace, pauses, pitch, loud].join("; "),
-    baselineNote: base ? `Compared to her usual from ${base.samples} recordings.` : "No baseline yet, so no comparison to her usual.",
+    baselineNote: base ? `Compared to their usual from ${base.samples} recordings.` : "No baseline yet, so no comparison to their usual.",
   };
 }
 
-// Her usual voice: medians over past recordings once there are 5+ (older recordings that came
+// Their usual voice: medians over past recordings once there are 5+ (older recordings that came
 // with a steady mood check-in, -1 to +1, are preferred when there are 3+ of them).
 export function baseline(history) {
   // Steady = 5 or 6 on the 1-10 mood scale (or -1 to +1 on the older -5 to +5 scale).

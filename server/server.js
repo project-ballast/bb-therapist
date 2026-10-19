@@ -146,7 +146,7 @@ async function handleChat(req, res) {
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
     });
-    // Stop paying for a reply nobody will read if she closes the app mid-reply.
+    // Stop paying for a reply nobody will read if they close the app mid-reply.
     // (req's "close" has already fired once the body is read, so listen on res.)
     res.on("close", () => !res.writableFinished && stream.abort());
     for await (const event of stream) {

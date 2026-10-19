@@ -53,12 +53,12 @@ function show(view) {
 document.querySelectorAll(".tabs button").forEach((b) =>
   b.addEventListener("click", () => (b.dataset.view === "chat" ? openChat() : show(b.dataset.view)))
 );
-// A chat counts as current until 3 hours after her last message (Derek, 2026-10-19).
+// A chat counts as current until 3 hours after their last message (Derek, 2026-10-19).
 const CHAT_GAP_MS = 3 * 3600 * 1000;
 const recent = (c) => Date.now() - new Date(c.lastAt || c.started).getTime() < CHAT_GAP_MS;
 
 // ---------- conversation start ----------
-// Chit Chat resumes the conversation if she talked in the last 3 hours, otherwise starts a new one.
+// Chit Chat resumes the conversation if they talked in the last 3 hours, otherwise starts a new one.
 function openChat() {
   if (!chat?.messages?.length || !recent(chat)) newChat();
   else renderChat();
@@ -79,7 +79,7 @@ $("newChatBtn").addEventListener("click", () => {
 // ---------- chat ----------
 // ---------- mood scale (1 very low, 5-6 okay, 10 very high / wired) ----------
 const moodScale = $("moodScale");
-// chat.mood is her latest number (sent to Claude); chat.startMood is the one tapped in the top bar,
+// chat.mood is their latest number (sent to Claude); chat.startMood is the one tapped in the top bar,
 // which stays put so a later "How do you feel now?" pick doesn't rewrite it.
 function setMood(n, { top = false } = {}) {
   chat.mood = n;
@@ -105,7 +105,7 @@ function renderMood() {
 }
 
 // "How do you feel now?" after a vent or an exercise: Claude ends its reply with [[MOOD]].
-// Tapping a number updates her mood and sends it as her answer, which restarts the loop.
+// Tapping a number updates their mood and sends it as their answer, which restarts the loop.
 function moodCheck() {
   const box = el("div", "moodcheck");
   box.append(el("div", "moodbar-head", "How do you feel now? 1 very low · 5-6 okay · 10 very high"));
@@ -147,7 +147,7 @@ function parseAnalysis(line) {
   }
   return out;
 }
-// Splits a streamed reply into the hidden analysis line (debug mode) and the text she sees.
+// Splits a streamed reply into the hidden analysis line (debug mode) and the text they see.
 function splitReply(full) {
   if (!full.startsWith(ANALYSIS_PREFIX.slice(0, Math.min(full.length, ANALYSIS_PREFIX.length)))) return { analysis: null, text: full, pending: false };
   const nl = full.indexOf("\n");
@@ -199,7 +199,7 @@ function context() {
 function voiceContext() {
   const last = chat.messages[chat.messages.length - 1];
   if (!last?.voice) return undefined;
-  const history = voiceHistory.filter((h) => h.at !== last.voice.at); // her usual, not counting this message
+  const history = voiceHistory.filter((h) => h.at !== last.voice.at); // their usual, not counting this message
   return { latest: last.voice, baseline: baseline(history), feedback: profile.voiceFeedback !== false };
 }
 
@@ -283,7 +283,7 @@ $("cancelVoice").addEventListener("click", () => {
 });
 
 async function sendMessage(text, voice) {
-  document.querySelectorAll(".moodcheck").forEach((n) => n.remove()); // she answered another way
+  document.querySelectorAll(".moodcheck").forEach((n) => n.remove()); // they answered another way
   if (detectRisk(text)) openCrisis(); // before any network call
   const msg = { role: "user", content: text };
   if (voice) msg.voice = voice;
