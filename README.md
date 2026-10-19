@@ -22,7 +22,7 @@ Or set up a Web Service by hand:
 2. Build Command: `npm install` (not `start`). Start Command: `npm start`.
 3. Add environment variables: `ANTHROPIC_API_KEY` and `APP_PASSCODE`.
 4. Deploy, then open the `https://...onrender.com` address in Chrome, Edge, or Safari on your computer.
-5. Enter the passcode once in Settings → App passcode. Shortcut: open `https://<your-app>.onrender.com/#key=<APP_PASSCODE>` and it fills it in for you.
+5. The first screen asks for the passcode; the browser remembers it after one correct entry. Shortcut: open `https://<your-app>.onrender.com/#key=<APP_PASSCODE>` to skip the screen.
 
 Note: Render's free tier sleeps after about 15 minutes idle, so the first reply can take 30 to 60 seconds. A paid instance (about $7 a month) answers fast every time.
 

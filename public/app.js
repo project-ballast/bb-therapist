@@ -364,7 +364,7 @@ async function askClaude() {
     reply.remove();
     panel?.remove();
     const msgs = {
-      passcode: "Enter the app passcode in Settings once, then come back to Chit Chat.",
+      passcode: "The passcode was not accepted.",
       busy: "The app is busy. Try again in a minute.",
       offline: "No connection right now. If you need someone now, call or text 988.",
       refusal: "I couldn't answer that one. If you're struggling, call or text 988 to reach a person.",
@@ -395,6 +395,7 @@ async function askClaude() {
   sending = false;
   micBtn.disabled = false;
   scrollDown();
+  if (failed === "passcode") showLock("The passcode changed. Enter the new one, then say your last message again.");
 }
 
 // ---------- support panel (only when risk is detected) ----------
@@ -425,7 +426,7 @@ $("saveSettings").addEventListener("click", () => {
   $("settingsMsg").textContent = "Saved.";
   // Back to Chit Chat, unless the new passcode is rejected.
   if (!changed) return openChat();
-  checkSetup().then((missing) => (missing ? ($("settingsMsg").textContent = "Saved, but the passcode is wrong.") : openChat()));
+  checkSetup().then((missing) => (missing ? showLock("That passcode didn't work. Enter the right one to continue.") : openChat()));
 });
 $("clearChat").addEventListener("click", () => {
   if (!confirm("Delete all chats on this computer? This can't be undone.")) return;
@@ -440,19 +441,41 @@ $("clearAll").addEventListener("click", () => {
   location.reload();
 });
 
-// ---------- start ----------
-openChat(); // Talk is always the first screen
-// Only mention setup if the server actually rejects this device.
-function checkSetup() {
-  return fetch("/api/check", { method: "POST", headers: { "X-App-Passcode": profile.passcode || "" } })
-    .then((r) => {
-      const missing = r.status === 401;
-      return missing;
-    })
-    .catch(() => false);
+// ---------- passcode screen (always first) ----------
+// true if the server accepts this passcode; offline counts as yes only for a saved one, so the cached app still opens.
+function checkSetup(key = profile.passcode) {
+  return fetch("/api/check", { method: "POST", headers: { "X-App-Passcode": key || "" } })
+    .then((r) => r.status === 401)
+    .catch(() => !key);
 }
-checkSetup().then((missing) => {
-  if (missing) $("messages").append(bubble("note", "Enter the app passcode in Settings once, then come back to Chit Chat."));
+function showLock(msg = "") {
+  session?.cancel();
+  session = null;
+  $("tabs").classList.add("hidden");
+  show("lock");
+  $("lockMsg").textContent = msg;
+  $("lockKey").value = "";
+  $("lockKey").focus();
+}
+function unlock() {
+  $("tabs").classList.remove("hidden");
+  openChat(); // Chit Chat is always the first screen after the passcode
+}
+$("lockForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const key = $("lockKey").value.trim();
+  if (!key) return;
+  $("lockBtn").disabled = true;
+  $("lockMsg").textContent = "Checking...";
+  const missing = await checkSetup(key);
+  $("lockBtn").disabled = false;
+  if (missing) return showLock("That passcode didn't work. After 20 wrong tries, wait 10 minutes.");
+  profile.passcode = key; // remembered on this browser, so it isn't asked again
+  save(KEYS.profile, profile);
+  unlock();
 });
+
+// ---------- start ----------
+checkSetup().then((missing) => (missing ? showLock() : unlock()));
 [KEYS.log, KEYS.plan].forEach((k) => localStorage.removeItem(k)); // removed check-in log and safety plan
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});

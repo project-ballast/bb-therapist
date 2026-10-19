@@ -19,8 +19,19 @@
   </header>
 
   <main>
+    <!-- Passcode: the first screen, until the server accepts the passcode -->
+    <section id="view-lock" class="view hidden">
+      <h1>Enter the passcode</h1>
+      <form id="lockForm">
+        <label class="label" for="lockKey">App passcode</label>
+        <input id="lockKey" type="password" autocomplete="current-password" required>
+        <button id="lockBtn" type="submit" class="primary">Continue</button>
+        <p id="lockMsg" class="muted" role="alert"></p>
+      </form>
+    </section>
+
     <!-- Chat -->
-    <section id="view-chat" class="view">
+    <section id="view-chat" class="view hidden">
       <div class="moodbar" role="group" aria-labelledby="moodLabel">
         <div class="moodbar-head"><span id="moodLabel">Mood right now</span><span class="muted">1 very low · 5-6 okay · 10 very high</span></div>
         <div id="moodScale" class="mood-scale"></div>
@@ -57,7 +68,7 @@
     </section>
   </main>
 
-  <nav class="tabs">
+  <nav id="tabs" class="tabs hidden">
     <button type="button" data-view="chat">Chit Chat</button>
     <button type="button" data-view="settings">Settings</button>
   </nav>
