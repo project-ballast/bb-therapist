@@ -37,11 +37,20 @@ const SECURITY_HEADERS = {
     "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'",
 };
 
+// Wrong passcodes are capped at 20 per 10 minutes for everyone (all visitors share Render's proxy
+// address), so the passcode can't be guessed by trying thousands of them. While capped, even the
+// right passcode waits, at most 10 minutes.
+let fails = [];
 function passcodeOk(given) {
   if (!PASSCODE) return true;
+  const now = Date.now();
+  fails = fails.filter((t) => now - t < 10 * 60 * 1000);
+  if (fails.length >= 20) return false;
   const a = Buffer.from(String(given || ""));
   const b = Buffer.from(PASSCODE);
-  return a.length === b.length && timingSafeEqual(a, b);
+  const ok = a.length === b.length && timingSafeEqual(a, b);
+  if (!ok) fails.push(now);
+  return ok;
 }
 
 // Simple per-IP limit: 60 chat requests per 10 minutes.
@@ -93,7 +102,7 @@ async function handleTranscribe(req, res) {
     res.end(JSON.stringify(obj));
   };
   if (!passcodeOk(req.headers["x-app-passcode"])) return reply(401, { error: "passcode" });
-  if (rateLimited(req.socket.remoteAddress)) return reply(429, { error: "rate" });
+  if (rateLimited(req.socket.remoteAddress) || overDailyLimit()) return reply(429, { error: "rate" });
   if (!process.env.OPENAI_API_KEY) return reply(503, { error: "no-transcriber" });
   const type = String(req.headers["content-type"] || "").split(";")[0].trim();
   const ext = AUDIO_EXT[type];
@@ -160,7 +169,7 @@ async function handleChat(req, res) {
   res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" });
   const send = (obj) => res.write(JSON.stringify(obj) + "\n");
 
-  const context = buildContext(body.context);
+  const context = buildContext(body.context && typeof body.context === "object" ? body.context : {});
   const system = [{ type: "text", text: BASE_PROMPT, cache_control: { type: "ephemeral" } }];
   if (context) system.push({ type: "text", text: context });
   if (body.debug === true) system.push({ type: "text", text: DEBUG_PROMPT });
@@ -176,7 +185,9 @@ async function handleChat(req, res) {
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
     });
-    req.on("close", () => stream.abort());
+    // Stop paying for a reply nobody will read if she closes the app mid-reply.
+    // (req's "close" has already fired once the body is read, so listen on res.)
+    res.on("close", () => !res.writableFinished && stream.abort());
     for await (const event of stream) {
       if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
         send({ t: "text", v: event.delta.text });
