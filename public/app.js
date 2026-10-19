@@ -328,7 +328,8 @@ async function askClaude() {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-App-Passcode": profile.passcode || "" },
-      body: JSON.stringify({ messages: chat.messages, context: context(), debug: showDebug }),
+      // Only what the server uses (it keeps the last 40), so a long chat never hits the 200 KB request cap.
+      body: JSON.stringify({ messages: chat.messages.slice(-40).map(({ role, content }) => ({ role, content })), context: context(), debug: showDebug }),
     });
     if (res.status === 401) failed = "passcode";
     else if (res.status === 429) failed = "busy";

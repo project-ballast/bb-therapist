@@ -10,13 +10,15 @@ self.addEventListener("activate", (e) => {
   );
 });
 self.addEventListener("fetch", (e) => {
-  if (e.request.method !== "GET") return;
+  if (e.request.method !== "GET" || new URL(e.request.url).pathname.startsWith("/api/")) return;
   // Network first so updates arrive; fall back to cache when offline.
   e.respondWith(
     fetch(e.request, { cache: "no-cache" })
       .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(e.request, copy));
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, copy));
+        }
         return res;
       })
       .catch(() => caches.match(e.request).then((r) => r || caches.match("/index.html")))
