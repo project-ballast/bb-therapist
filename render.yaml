@@ -12,7 +12,5 @@ services:
         value: "22"
       - key: ANTHROPIC_API_KEY
         sync: false
-      - key: OPENAI_API_KEY
-        sync: false
       - key: APP_PASSCODE
         sync: false

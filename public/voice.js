@@ -1,7 +1,6 @@
-// Voice input: speech-to-text plus simple on-phone voice measurements.
-// On computers, raw audio never leaves this file; only the transcript and a few numbers do
-// (the browser's own speech-to-text may send audio to Google or Apple). On phones, the recording is
-// sent once to the app's server, which has OpenAI turn it into words; it is not saved.
+// Voice input: the browser's speech-to-text plus simple voice measurements, on a computer only.
+// Raw audio never leaves this file; only the transcript and a few numbers do
+// (the browser's own speech-to-text may send audio to Google or Apple).
 
 const FRAME_MS = 50;
 const MIN_HZ = 75;
@@ -9,82 +8,48 @@ const MAX_HZ = 400;
 
 const Recognition = typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
 
-// Phones (iPhone, iPad, Android): the browser's speech-to-text fights with the mic meter for the
-// microphone, and fails in iPhone home-screen apps, so there the app records audio itself and the
-// server turns it into words.
-const isMobile =
+// Computer only for now (Derek, 2026-10-19). On phones the browser's speech-to-text fights with the
+// mic meter for the microphone and fails in iPhone home-screen apps.
+const isPhone =
   typeof navigator !== "undefined" &&
   (/iPhone|iPad|iPod|Android/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
-const canRecord = typeof window !== "undefined" && !!window.MediaRecorder && !!navigator.mediaDevices?.getUserMedia;
-export const useServerSpeech = isMobile || !Recognition;
 
 // Why voice can't work here, or null if it should.
 export function voiceProblem() {
+  if (isPhone) return "phone";
   if (!window.isSecureContext) return "insecure";
-  if (useServerSpeech ? !canRecord : !Recognition) return "unsupported";
+  if (!Recognition) return "unsupported";
   return null;
-}
-
-function recorderType() {
-  for (const t of ["audio/mp4", "audio/webm;codecs=opus", "audio/webm", "audio/ogg"]) {
-    if (MediaRecorder.isTypeSupported?.(t)) return t;
-  }
-  return "";
 }
 
 // Errors that end a recording; others (like a few seconds of silence) are recoverable.
 const FATAL = new Set(["not-allowed", "service-not-allowed", "network", "audio-capture", "language-not-supported", "bad-grammar"]);
 
 export class VoiceSession {
-  // transcribe(blob) -> text is only used when useServerSpeech is true.
-  constructor({ onTranscript, onFatal, transcribe } = {}) {
+  constructor({ onTranscript, onFatal } = {}) {
     this.onTranscript = onTranscript || (() => {});
     this.onFatal = onFatal || (() => {});
-    this.transcribe = transcribe;
-    this.server = useServerSpeech;
     this.frames = []; // {rms, pitch}
     this.finalText = "";
     this.interim = "";
     this.active = false;
   }
 
-  // Call directly from the tap/click: some browsers only allow speech-to-text to start inside it.
+  // Call directly from the click: some browsers only allow speech-to-text to start inside it.
   start() {
     this.active = true;
-    // Create the audio context inside the tap too, or browsers start it paused (silent).
+    // Create the audio context inside the click too, or browsers start it paused (silent).
     try {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
       this.ctx.resume?.().catch(() => {});
     } catch {
       this.ctx = null;
     }
-    if (this.server) {
-      // Recording is the whole message here, so a mic failure ends it.
-      this.startMeter().catch((err) => {
-        if (!this.active) return;
-        this.error = err?.name === "NotAllowedError" ? "not-allowed" : err?.name === "NotFoundError" ? "audio-capture" : "record-failed";
-        this.cancel();
-        this.onFatal(this.error);
-      });
-      return;
-    }
     this.startRecognition();
     // Voice measurements are optional; the message still works without them.
     this.startMeter().catch(() => {
       this.meterFailed = true;
     });
-  }
-
-  // Records from the same mic stream the meter uses, so only one thing holds the mic.
-  startRecorder() {
-    const type = recorderType();
-    this.recorder = new MediaRecorder(this.stream, type ? { mimeType: type } : undefined);
-    this.chunks = [];
-    this.recorder.ondataavailable = (e) => e.data?.size && this.chunks.push(e.data);
-    this.recorded = new Promise((resolve) => (this.recorder.onstop = resolve));
-    this.recorder.start(1000);
-    this.startedAt = Date.now();
-    this.onTranscript("Listening... your words appear after you send.");
   }
 
   async startMeter() {
@@ -96,11 +61,7 @@ export class VoiceSession {
       this.stream.getTracks().forEach((t) => t.stop());
       return;
     }
-    if (this.server) this.startRecorder();
-    if (!this.ctx) {
-      if (this.server) return; // still record words, just without measurements
-      throw new Error("no audio context");
-    }
+    if (!this.ctx) throw new Error("no audio context");
     if (this.ctx.state === "suspended") await this.ctx.resume();
     const src = this.ctx.createMediaStreamSource(this.stream);
     this.analyser = this.ctx.createAnalyser();
@@ -165,7 +126,6 @@ export class VoiceSession {
   async stop() {
     this.active = false;
     clearInterval(this.timer);
-    if (this.server) return this.stopServer();
     const ended = new Promise((resolve) => {
       this.recEnded = resolve;
       setTimeout(resolve, 1500); // don't hang if the browser never fires 'end'
@@ -182,34 +142,9 @@ export class VoiceSession {
     return { text, features: computeFeatures(this.frames, text), error: this.error || null };
   }
 
-  async stopServer() {
-    let text = "";
-    if (this.recorder && this.recorder.state !== "inactive") {
-      this.recorder.stop();
-      await Promise.race([this.recorded, new Promise((r) => setTimeout(r, 2000))]);
-    }
-    this.stream?.getTracks().forEach((t) => t.stop());
-    this.ctx?.close().catch(() => {});
-    const type = (this.recorder?.mimeType || "audio/mp4").split(";")[0];
-    const blob = new Blob(this.chunks || [], { type });
-    if (blob.size && !this.error) {
-      try {
-        text = (await this.transcribe(blob)) || "";
-      } catch (err) {
-        this.error = err?.message || "transcribe";
-      }
-    }
-    return { text, features: computeFeatures(this.frames, text), error: this.error || null };
-  }
-
   cancel() {
     this.active = false;
     clearInterval(this.timer);
-    try {
-      if (this.recorder?.state === "recording") this.recorder.stop();
-    } catch {
-      /* already stopped */
-    }
     try {
       this.rec?.abort();
     } catch {
@@ -258,7 +193,7 @@ export function computeFeatures(frames, text) {
   const words = (text.match(/\S+/g) || []).length;
   if (frames.length < 20 || words < 3) return null;
   const rmsAll = frames.map((f) => f.rms);
-  // Background noise level, kept well below her speaking level so nonstop talking still counts as speech.
+  // Background noise level, kept well below their speaking level so nonstop talking still counts as speech.
   const floor = quantile(rmsAll, 0.1);
   const threshold = Math.min(Math.max(floor * 3, 0.01), quantile(rmsAll, 0.95) * 0.25);
   const voiced = frames.map((f) => f.rms > threshold);
@@ -270,7 +205,7 @@ export function computeFeatures(frames, text) {
   const voicedSec = (span.filter(Boolean).length * FRAME_MS) / 1000;
   if (voicedSec < 1.5) return null;
 
-  // Silent stretches of 2+ seconds inside her speech.
+  // Silent stretches of 2+ seconds inside their speech.
   let longPauses = 0;
   let run = 0;
   for (const v of span) {
@@ -333,7 +268,7 @@ export function describeVoice(f, base) {
     return null;
   };
   const pace =
-    rel(f.wordsPerMinute, base?.wordsPerMinute, 0.2, 0.2, ["slower than usual", "her usual pace", "faster than usual"]) ||
+    rel(f.wordsPerMinute, base?.wordsPerMinute, 0.2, 0.2, ["slower than usual", "their usual pace", "faster than usual"]) ||
     (f.wordsPerMinute < 110 ? "slow" : f.wordsPerMinute > 170 ? "fast" : "average");
   const pauses = f.pausePercent >= 40 || f.longPauses >= 2 ? "many pauses" : f.pausePercent <= 10 ? "almost no pauses" : "normal pauses";
   const pitch = typeof f.pitchRangeSemitones !== "number" ? "pitch not measured" : f.pitchRangeSemitones < 3 ? "flat, monotone" : f.pitchRangeSemitones > 9 ? "very lively pitch" : "normal pitch movement";
@@ -353,11 +288,11 @@ export function describeVoice(f, base) {
       ["Loudness", typeof f.loudnessDb === "number" ? `${f.loudnessDb} dB (relative to this mic)` : "not measured"],
     ],
     summary: [pace, pauses, pitch, loud].join("; "),
-    baselineNote: base ? `Compared to her usual from ${base.samples} recordings.` : "No baseline yet, so no comparison to her usual.",
+    baselineNote: base ? `Compared to their usual from ${base.samples} recordings.` : "No baseline yet, so no comparison to their usual.",
   };
 }
 
-// Her usual voice: medians over past recordings once there are 5+ (older recordings that came
+// Their usual voice: medians over past recordings once there are 5+ (older recordings that came
 // with a steady mood check-in, -1 to +1, are preferred when there are 3+ of them).
 export function baseline(history) {
   // Steady = 5 or 6 on the 1-10 mood scale (or -1 to +1 on the older -5 to +5 scale).
