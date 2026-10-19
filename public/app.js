@@ -1,7 +1,7 @@
 import { detectRisk, stripToken, CRISIS_TOKEN, MOOD_TOKEN } from "./crisis.js";
 import { VoiceSession, voiceProblem, baseline, describeVoice } from "./voice.js";
 
-// ---------- storage (this phone only) ----------
+// ---------- storage (this computer only) ----------
 const KEYS = { profile: "steady.profile", plan: "steady.plan", log: "steady.log", chat: "steady.chat", voice: "steady.voice" };
 function load(key, fallback) {
   try {
@@ -53,12 +53,14 @@ function show(view) {
 document.querySelectorAll(".tabs button").forEach((b) =>
   b.addEventListener("click", () => (b.dataset.view === "chat" ? openChat() : show(b.dataset.view)))
 );
-const recent = (iso) => Date.now() - new Date(iso).getTime() < 6 * 3600 * 1000;
+// A chat counts as current until 3 hours after her last message (Derek, 2026-10-19).
+const CHAT_GAP_MS = 3 * 3600 * 1000;
+const recent = (c) => Date.now() - new Date(c.lastAt || c.started).getTime() < CHAT_GAP_MS;
 
 // ---------- conversation start ----------
-// Talk resumes a conversation from the last 6 hours, otherwise starts a new one.
+// Chit Chat resumes the conversation if she talked in the last 3 hours, otherwise starts a new one.
 function openChat() {
-  if (!chat?.messages?.length || !recent(chat.started)) newChat();
+  if (!chat?.messages?.length || !recent(chat)) newChat();
   else renderChat();
   show("chat");
 }
@@ -162,7 +164,7 @@ function debugPanel(userMsg, analysis) {
   } else {
     const history = voiceHistory.filter((h) => h.at !== f.at && h.at < f.at);
     const d = describeVoice(f, baseline(history));
-    box.append(el("h4", null, "Measured on the phone (real numbers)"));
+    box.append(el("h4", null, "Measured on this computer (real numbers)"));
     const table = el("dl");
     d.rows.forEach(([k, v]) => table.append(el("dt", null, k), el("dd", null, v)));
     box.append(table, el("p", null, `Reading of those numbers (rule of thumb): ${d.summary}.`), el("p", "muted", d.baselineNote));
@@ -215,22 +217,14 @@ const isDesktop = matchMedia("(hover: hover) and (pointer: fine)").matches;
 const IDLE_HINT = isDesktop ? "Click or press Space to talk" : "Tap to talk";
 const VOICE_HELP = {
   insecure: "Voice only works when the app is opened at its https:// address (or http://localhost on this computer).",
-  unsupported: "This browser can't record audio. Use Chrome, Edge, or Safari.",
+  unsupported: "This browser has no speech-to-text. Use Chrome, Edge, or Safari.",
   network: "This browser couldn't reach its speech-to-text service. Brave and Opera block it; use Chrome, Edge, or Safari, and check the internet connection.",
-  "not-allowed": isDesktop
-    ? "The microphone is blocked. Click the icon left of the web address, allow Microphone, then try again. On Windows, also check Settings > Privacy > Microphone."
-    : "The microphone is blocked. Allow it for this app in your phone's settings, then tap the mic again.",
+  phone: "Calm like a Potato works on a computer for now. Open it in Chrome, Edge, or Safari on a laptop or PC.",
+  "not-allowed": "The microphone is blocked. Click the icon left of the web address, allow Microphone, then try again. On Windows, also check Settings > Privacy > Microphone.",
   "audio-capture": "No microphone found. Plug one in, or check your computer's sound settings.",
   "language-not-supported": "Speech-to-text doesn't support this browser's language setting.",
 };
 VOICE_HELP["service-not-allowed"] = VOICE_HELP["not-allowed"];
-Object.assign(VOICE_HELP, {
-  "no-transcriber": "Voice on phones needs one more setting on the server (OPENAI_API_KEY). Ask Derek to add it.",
-  transcribe: "Couldn't turn that recording into words. Check the internet connection and try again.",
-  passcode: "Enter the app passcode in Settings once, then come back to Chit Chat.",
-  busy: "Too many messages in a short time. Wait a minute and try again.",
-  "record-failed": "The microphone didn't start. Close the app fully, reopen it, and try again.",
-});
 const problem = voiceProblem();
 if (problem) {
   micBtn.classList.add("hidden");
@@ -242,7 +236,6 @@ micBtn.addEventListener("click", async () => {
   if (!session) {
     session = new VoiceSession({
       onTranscript: (t) => ($("liveText").textContent = t || "..."),
-      transcribe: transcribeAudio,
       onFatal: (err) => {
         session = null;
         setMic("idle");
@@ -276,17 +269,6 @@ micBtn.addEventListener("click", async () => {
   }
   await sendMessage(text, voice);
 });
-// iPhone path: send the recording to the server to be turned into words.
-async function transcribeAudio(blob) {
-  const r = await fetch("/api/transcribe", {
-    method: "POST",
-    headers: { "Content-Type": blob.type || "audio/mp4", "X-App-Passcode": profile.passcode || "", "X-Speech-Lang": (navigator.language || "en").slice(0, 2) },
-    body: blob,
-  });
-  if (r.ok) return (await r.json()).text;
-  const err = (await r.json().catch(() => ({}))).error;
-  throw new Error(r.status === 401 ? "passcode" : err === "no-transcriber" ? "no-transcriber" : err === "rate" ? "busy" : "transcribe");
-}
 // On a computer, Space starts and sends a voice message.
 document.addEventListener("keydown", (e) => {
   if (e.code !== "Space" || e.repeat || $("view-chat").classList.contains("hidden")) return;
@@ -306,6 +288,7 @@ async function sendMessage(text, voice) {
   const msg = { role: "user", content: text };
   if (voice) msg.voice = voice;
   chat.messages.push(msg);
+  chat.lastAt = new Date().toISOString();
   save(KEYS.chat, chat);
   $("messages").append(bubble("user", text));
   await askClaude();
@@ -445,13 +428,13 @@ $("saveSettings").addEventListener("click", () => {
   checkSetup().then((missing) => (missing ? ($("settingsMsg").textContent = "Saved, but the passcode is wrong.") : openChat()));
 });
 $("clearChat").addEventListener("click", () => {
-  if (!confirm("Delete all chats on this phone? This can't be undone.")) return;
+  if (!confirm("Delete all chats on this computer? This can't be undone.")) return;
   chat = null;
   localStorage.removeItem(KEYS.chat);
   openChat();
 });
 $("clearAll").addEventListener("click", () => {
-  if (!confirm("Erase your conversations, voice history, and name from this phone? You won't be able to get them back.")) return;
+  if (!confirm("Erase your conversations, voice history, and name from this computer? You won't be able to get them back.")) return;
   Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
   if (profile.passcode) save(KEYS.profile, { passcode: profile.passcode }); // keep the passcode so the app still works
   location.reload();

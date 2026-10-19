@@ -1,4 +1,4 @@
-// Phone-side risk check. Runs before any AI call and works offline.
+// In-browser risk check. Runs before any AI call and works offline.
 // Deliberately broad: a false alarm costs a few seconds, a miss could cost far more.
 const PATTERNS = [
   /\bkill(ing)? (my ?self|me)\b/,

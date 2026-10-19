@@ -92,45 +92,6 @@ function readRaw(req, limit) {
   });
 }
 
-// Speech-to-text for iPhone, where the browser's own speech-to-text doesn't work in this app.
-// The audio goes to OpenAI to be turned into words and is not stored here.
-const TRANSCRIBE_MODEL = process.env.TRANSCRIBE_MODEL || "gpt-4o-mini-transcribe";
-const AUDIO_EXT = { "audio/mp4": "mp4", "audio/webm": "webm", "audio/ogg": "ogg", "audio/wav": "wav", "audio/mpeg": "mp3" };
-async function handleTranscribe(req, res) {
-  const reply = (code, obj) => {
-    res.writeHead(code, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(obj));
-  };
-  if (!passcodeOk(req.headers["x-app-passcode"])) return reply(401, { error: "passcode" });
-  if (rateLimited(req.socket.remoteAddress) || overDailyLimit()) return reply(429, { error: "rate" });
-  if (!process.env.OPENAI_API_KEY) return reply(503, { error: "no-transcriber" });
-  const type = String(req.headers["content-type"] || "").split(";")[0].trim();
-  const ext = AUDIO_EXT[type];
-  if (!ext) return reply(415, { error: "audio-type" });
-  let audio;
-  try {
-    audio = await readRaw(req, 10_000_000); // about 10 minutes of phone audio
-  } catch {
-    return reply(413, { error: "too-large" });
-  }
-  const form = new FormData();
-  form.append("model", TRANSCRIBE_MODEL);
-  form.append("file", new Blob([audio], { type }), `speech.${ext}`);
-  const lang = String(req.headers["x-speech-lang"] || "").slice(0, 2);
-  if (/^[a-z]{2}$/.test(lang)) form.append("language", lang);
-  const r = await fetch(process.env.OPENAI_BASE_URL || "https://api.openai.com/v1/audio/transcriptions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: form,
-  });
-  if (!r.ok) {
-    console.error("transcribe failed:", r.status);
-    return reply(502, { error: "transcribe" });
-  }
-  const { text } = await r.json();
-  reply(200, { text: String(text || "").trim() });
-}
-
 function cleanMessages(raw) {
   if (!Array.isArray(raw)) return null;
   const msgs = raw
@@ -212,7 +173,7 @@ async function serveStatic(req, res) {
     return res.end();
   }
   try {
-    // Always revalidate, so a new deploy reaches the phone on the next load (the ETag keeps that cheap).
+    // Always revalidate, so a new deploy reaches the browser on the next load (the ETag keeps that cheap).
     const info = await stat(filePath);
     const etag = `"${info.size.toString(16)}-${Math.floor(info.mtimeMs).toString(16)}"`;
     const headers = { "Cache-Control": "no-cache", ETag: etag, ...SECURITY_HEADERS };
@@ -233,7 +194,6 @@ http
   .createServer(async (req, res) => {
     try {
       if (req.method === "POST" && req.url === "/api/chat") return await handleChat(req, res);
-      if (req.method === "POST" && req.url === "/api/transcribe") return await handleTranscribe(req, res);
       if (req.method === "POST" && req.url === "/api/check") {
         res.writeHead(passcodeOk(req.headers["x-app-passcode"]) ? 204 : 401);
         return res.end();
