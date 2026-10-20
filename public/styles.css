@@ -1,14 +1,16 @@
 :root {
-  --bg: #f6f4ef;
+  /* Colors from Derek's logo: brand-red #b90e31, brand-black #231f20 */
+  --bg: #f7f6f6;
   --surface: #ffffff;
-  --text: #1f2a28;
-  --muted: #5d6a67;
-  --accent: #3d6b63;
-  --accent-soft: #e3ece9;
-  --border: #dcd8cf;
-  --danger: #b3261e;
-  --danger-soft: #fbe9e7;
-  --user: #3d6b63;
+  --text: #231f20;
+  --muted: #5f5a5b;
+  --accent: #b90e31;
+  --accent-text: #b90e31;
+  --accent-soft: #f9e6ea;
+  --border: #dcd9da;
+  --danger: #b90e31;
+  --danger-soft: #f9e6ea;
+  --user: #b90e31;
   --user-text: #ffffff;
   --bot: #ffffff;
   --warn: #fff4d6;
@@ -16,20 +18,21 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #141917;
-    --surface: #1e2523;
-    --text: #e8ece9;
-    --muted: #a3b0ac;
-    --accent: #7fb5a9;
-    --accent-soft: #24332f;
-    --border: #33403c;
-    --danger: #ff8a80;
-    --danger-soft: #3a1f1d;
-    --user: #2f5a52;
+    --bg: #000000;
+    --surface: #161415;
+    --text: #ffffff;
+    --muted: #a8a3a4;
+    --accent: #b90e31;
+    --accent-text: #f07088;
+    --accent-soft: #2e0e16;
+    --border: #3a3536;
+    --danger: #f07088;
+    --danger-soft: #2e0e16;
+    --user: #b90e31;
     --user-text: #ffffff;
-    --bot: #1e2523;
+    --bot: #161415;
     --warn: #3a3420;
-    --on-strong: #10201c;
+    --on-strong: #ffffff;
   }
 }
 * { box-sizing: border-box; }
@@ -50,13 +53,13 @@ button, input, textarea { font: inherit; color: inherit; }
   background: var(--surface); border-bottom: 1px solid var(--border);
   position: sticky; top: 0; z-index: 5;
 }
-.brand { font-weight: 700; color: var(--accent); font-size: 20px; }
+.brand { font-weight: 700; color: var(--accent-text); font-size: 20px; }
 main { flex: 1; width: 100%; max-width: 640px; margin: 0 auto; padding: 16px 16px 96px; }
 h1 { font-size: 24px; margin: 4px 0 16px; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin: 12px 0; }
 .label { display: block; font-weight: 600; margin: 16px 0 6px; }
 .card .label:first-child { margin-top: 0; }
-.pill { background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 0 10px; margin-left: 6px; }
+.pill { background: var(--accent-soft); color: var(--accent-text); border-radius: 999px; padding: 0 10px; margin-left: 6px; }
 .muted { color: var(--muted); font-size: 15px; }
 input[type=range] { width: 100%; accent-color: var(--accent); }
 input[type=text], input[type=number], input[type=password], input[type=tel], textarea {
@@ -72,7 +75,7 @@ textarea { resize: vertical; }
 .state b { font-size: 18px; }
 .state span { color: var(--muted); font-size: 15px; }
 .state:active { background: var(--accent-soft); }
-.link { background: none; border: 0; color: var(--accent); padding: 12px 0; font-weight: 600; cursor: pointer; display: block; }
+.link { background: none; border: 0; color: var(--accent-text); padding: 12px 0; font-weight: 600; cursor: pointer; display: block; }
 .primary {
   display: block; width: 100%; margin-top: 20px; background: var(--accent); color: #fff; border: 0;
   border-radius: 12px; padding: 14px; font-weight: 700; min-height: 48px; cursor: pointer;
@@ -84,7 +87,7 @@ textarea { resize: vertical; }
 }
 .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
 .chip {
-  flex: none; background: var(--accent-soft); color: var(--accent); border: 0; border-radius: 999px;
+  flex: none; background: var(--accent-soft); color: var(--accent-text); border: 0; border-radius: 999px;
   padding: 8px 14px; font-size: 15px; font-weight: 600; cursor: pointer; min-height: 40px;
 }
 .chip.on { background: var(--accent); color: var(--on-strong); }
@@ -99,7 +102,7 @@ textarea { resize: vertical; }
   border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); z-index: 5;
 }
 .tabs button { flex: 1; background: none; border: 0; padding: 14px 0; font-size: 14px; color: var(--muted); min-height: 56px; cursor: pointer; }
-.tabs button.on { color: var(--accent); font-weight: 700; }
+.tabs button.on { color: var(--accent-text); font-weight: 700; }
 .crisis {
   position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 20; display: flex; align-items: flex-end; justify-content: center;
 }
@@ -113,7 +116,7 @@ textarea { resize: vertical; }
   border-radius: 12px; padding: 14px; margin: 10px 0; min-height: 52px;
 }
 .big.call { background: var(--accent); color: var(--on-strong); }
-.big.text { background: var(--accent-soft); color: var(--accent); }
+.big.text { background: var(--accent-soft); color: var(--accent-text); }
 .voicebar {
   position: sticky; bottom: 64px; background: var(--bg); padding: 8px 0 4px;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -127,17 +130,17 @@ textarea { resize: vertical; }
   display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,0,0,.18);
 }
 .mic:disabled { opacity: .5; }
-.mic.on { background: var(--danger); animation: pulse 1.6s ease-in-out infinite; }
+.mic.on { background: var(--text); animation: pulse 1.6s ease-in-out infinite; }
 .mic-icon {
   width: 22px; height: 34px; border: 4px solid var(--on-strong); border-radius: 12px; position: relative;
 }
 .mic-icon::after {
   content: ""; position: absolute; left: 50%; bottom: -14px; width: 4px; height: 10px; background: var(--on-strong); transform: translateX(-50%);
 }
-.mic.on .mic-icon { width: 26px; height: 26px; border-radius: 4px; background: var(--on-strong); }
+.mic.on .mic-icon { width: 26px; height: 26px; border-radius: 4px; background: var(--bg); }
 .mic.on .mic-icon::after { display: none; }
 .mic-hint { color: var(--muted); font-size: 15px; text-align: center; }
-@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(179,38,30,.45); } 50% { box-shadow: 0 0 0 14px rgba(179,38,30,0); } }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(185,14,49,.45); } 50% { box-shadow: 0 0 0 14px rgba(185,14,49,0); } }
 @media (prefers-reduced-motion: reduce) { .mic.on { animation: none; } }
 .retry { align-self: center; }
 .check { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 4px; font-size: 15px; }
