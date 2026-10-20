@@ -3,8 +3,8 @@
   "short_name": "Calm Potato",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f6f4ef",
-  "theme_color": "#3d6b63",
+  "background_color": "#f7f6f6",
+  "theme_color": "#b90e31",
   "icons": [
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
