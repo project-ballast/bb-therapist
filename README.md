@@ -5,7 +5,7 @@ Web app for daily mood check-ins for people who live with bipolar disorder (anyo
 ## What you need
 - An Anthropic API key: https://console.anthropic.com → API Keys. Set a monthly spend limit there (for example $25).
 - Node.js 20 or newer.
-- A host that gives you an `https://` address (browsers only allow the microphone on https). Render, Railway, and Fly.io all work.
+- A host that gives you an `https://` address (browsers only allow the microphone on https). This repo is set up for Cloudflare Workers; `npm start` also runs it as a plain Node server on any Node host.
 
 ## Run it on your computer
 ```
@@ -14,31 +14,30 @@ ANTHROPIC_API_KEY=sk-ant-... APP_PASSCODE=pick-a-long-passcode npm start
 ```
 Open http://localhost:3000. Voice uses the browser's free speech-to-text: Chrome, Edge, or Safari on a laptop or PC. Phones, Firefox, Brave, and Opera don't work; phones show a "use a computer" note. On a PC, click the mic or press Space to start and send. Run the safety tests with `npm test`.
 
-## Put it online (Render example)
-Easiest: on https://render.com choose New → Blueprint, pick this repository, and enter `ANTHROPIC_API_KEY` and `APP_PASSCODE` when asked. `render.yaml` fills in everything else.
+## Put it online (Cloudflare Workers)
+`wrangler.jsonc` holds the setup. Cloudflare serves `public/` as plain files and runs `worker/index.js` only for `/api/*`.
+1. Cloudflare dashboard → Workers & Pages → Create → Import a repository → pick this repo (or open the existing `bb-therapist` Worker → Settings → Build and connect it).
+2. Build settings: Build command empty, Deploy command `npm run deploy` (the plain `npx wrangler deploy` also works, but Settings then shows a Cloudflare version id instead of the commit).
+3. Worker → Settings → Variables and Secrets → add two **Secrets**: `ANTHROPIC_API_KEY` and `APP_PASSCODE`. Then deploy again.
+4. Open the `https://bb-therapist.<your-subdomain>.workers.dev` address in Chrome, Edge, or Safari on your computer.
+5. The first screen asks for the passcode; the browser remembers it after one correct entry. Shortcut: open `https://<your-address>/#key=<APP_PASSCODE>` to skip the screen.
 
-Or set up a Web Service by hand:
-1. New → Web Service → pick this repository.
-2. Build Command: `npm install` (not `start`). Start Command: `npm start`.
-3. Add environment variables: `ANTHROPIC_API_KEY` and `APP_PASSCODE`.
-4. Deploy, then open the `https://...onrender.com` address in Chrome, Edge, or Safari on your computer.
-5. The first screen asks for the passcode; the browser remembers it after one correct entry. Shortcut: open `https://<your-app>.onrender.com/#key=<APP_PASSCODE>` to skip the screen.
-
-Note: Render's free tier sleeps after about 15 minutes idle, so the first reply can take 30 to 60 seconds. A paid instance (about $7 a month) answers fast every time.
+The wrong-passcode lockout, per-address limit and daily cap are kept in one Cloudflare Durable Object (free plan is enough). To try the Worker on your computer: put the two secrets in a `.dev.vars` file (`NAME=value` lines) and run `npm run dev`.
 
 ## Settings (environment variables)
 | Name | Default | Meaning |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | none | Required |
 | `APP_PASSCODE` | none | Strongly recommended. Asked for on the first screen (or via `/#key=<APP_PASSCODE>`). Without it anyone with the URL can use your key |
-| `DAILY_LIMIT` | `300` | Max chat replies per day, all users together |
+| `DAILY_LIMIT` | `300` (in `wrangler.jsonc` on Cloudflare) | Max chat replies per day, all users together |
 | `CLAUDE_MODEL` | `claude-opus-5-5` | Model used for chat |
 | `CLAUDE_EFFORT` | `medium` | `low` is faster and cheaper; `high` thinks harder |
 | `PORT` | `3000` | |
 
 ## Files
 - `server/prompt.js`: how Claude is told to behave. **Have a clinician read this.**
-- `server/server.js`: passes messages to Claude. Stores and logs nothing.
+- `worker/index.js`: the Cloudflare version of the server. Stores no messages and logs no content.
+- `server/server.js`: the plain Node version (for `npm start`). Stores and logs nothing.
 - `public/crisis.js`: in-browser risk phrase check (runs before any AI call, works offline).
 - `public/voice.js`: microphone, speech-to-text, and the voice measurements. Raw audio never leaves this file.
 - `public/app.js`: the app screens. All of a person's data stays in their own browser's storage.

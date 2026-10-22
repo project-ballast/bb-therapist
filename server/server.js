@@ -7,12 +7,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
 import { BASE_PROMPT, DEBUG_PROMPT, buildContext } from "./prompt.js";
+import { cleanMessages } from "./messages.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 const PASSCODE = process.env.APP_PASSCODE || "";
 const MODEL = process.env.CLAUDE_MODEL || "claude-opus-5-5";
 const EFFORT = process.env.CLAUDE_EFFORT || "medium";
-const MAX_HISTORY = 40; // messages sent per request, to cap cost
 const PUBLIC_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
 
 if (!process.env.ANTHROPIC_API_KEY) console.warn("ANTHROPIC_API_KEY is not set; chat will fail.");
@@ -90,18 +90,6 @@ function readRaw(req, limit) {
     req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
   });
-}
-
-function cleanMessages(raw) {
-  if (!Array.isArray(raw)) return null;
-  const msgs = raw
-    .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim())
-    .map((m) => ({ role: m.role, content: m.content.slice(0, 8000) }))
-    .slice(-MAX_HISTORY);
-  // The app opens with its own greeting; the API needs a user turn first.
-  if (msgs.length && msgs[0].role === "assistant") msgs.unshift({ role: "user", content: "(I just checked in on the app.)" });
-  if (!msgs.length || msgs[msgs.length - 1].role !== "user") return null;
-  return msgs;
 }
 
 async function handleChat(req, res) {

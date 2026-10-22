@@ -3,13 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Mood-episode support app for one person, using CBT and DBT skills with Claude.",
+  "description": "Daily mood check-in app for people who live with bipolar disorder, using CBT and DBT skills with Claude.",
   "scripts": {
     "start": "node server/server.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --var COMMIT:${WORKERS_CI_COMMIT_SHA:-local}"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.151.3"
   }
 }

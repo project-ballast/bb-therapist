@@ -1,0 +1,6 @@
+# Cloudflare: headers for the app's files. Always revalidate, so a new deploy reaches the browser on the next load.
+/*
+  Cache-Control: no-cache
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'

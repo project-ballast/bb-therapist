@@ -1,0 +1,27 @@
+// Cloudflare Workers setup. Secrets (ANTHROPIC_API_KEY, APP_PASSCODE) are set in the Cloudflare
+// dashboard or with `npx wrangler secret put NAME`, never in this file.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bb-therapist",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // The app's pages and scripts. Only /api/* runs the Worker code.
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  // Shared counters for the passcode lockout, per-address limit and daily cap.
+  "durable_objects": {
+    "bindings": [{ "name": "LIMITS", "class_name": "Limits" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Limits"] }],
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  "vars": {
+    "DAILY_LIMIT": "300",
+    "CLAUDE_MODEL": "claude-opus-5-5",
+    "CLAUDE_EFFORT": "medium"
+  },
+  "observability": { "enabled": true }
+}
