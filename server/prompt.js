@@ -82,7 +82,7 @@ export function buildContext(ctx = {}) {
   if (ctx.name) lines.push(`Their name: ${ctx.name}`);
   if (ctx.state) lines.push(`State they chose at check-in: ${ctx.state}`);
   if (typeof ctx.mood === "number") lines.push(`Mood at check-in (-5 very sad to +5 very happy): ${ctx.mood}`);
-  if (typeof ctx.mood10 === "number") lines.push(`Mood they tapped on a 1-10 scale (1 very sad, 5-6 okay, 10 very happy): ${ctx.mood10}. A 9-10 with racing, sleepless, or big-plan talk can mean a high state, not just happiness; a middle number with agitated words can still mean a mixed state.`);
+  if (typeof ctx.mood10 === "number") lines.push(`Mood they tapped on a 1-10 scale (1 very sad, 5-6 okay, 10 very happy): ${ctx.mood10}. A middle number with agitated words can still mean a mixed state.`);
   if (typeof ctx.sleep === "number") lines.push(`Hours slept last night: ${ctx.sleep}`);
   if (Array.isArray(ctx.recentSleep) && ctx.recentSleep.length) lines.push(`Sleep on recent check-ins (newest first): ${ctx.recentSleep.join(", ")} hours`);
   const v = ctx.voice;
