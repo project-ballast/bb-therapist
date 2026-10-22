@@ -16,7 +16,7 @@ A web app for people who live with bipolar disorder (anyone may use it), on a la
 
 ## How it works
 
-1. **No check-in screen**: Chit Chat (the first tab) opens straight into the conversation, with an optional 1-10 mood scale at the top (1 very low, 5-6 okay, 10 very high). Claude works out their state from that, their words, and their voice.
+1. **No check-in screen**: Chit Chat (the first tab) opens straight into the conversation, with an optional 1-10 mood scale at the top (1 very sad, 5-6 okay, 10 very happy). Claude works out their state from that, their words, and their voice.
 2. **The check-in loop** (Derek, 2026-10-19): mood 1-10 at the top, then "How are you feeling?", then "Would you like to vent, or do an exercise to help?". After the vent or exercise Claude asks "How do you feel now?" and the app shows a 1-10 picker (Claude sends a hidden [[MOOD]] flag). Their tap is sent as their answer, then "Would you like to talk or do an exercise to help?" and the loop repeats. This loop is the only conversation structure. Safety overrides the loop.
 3. **Voice chat (no typing)**: they click the mic (or presses Space) and talks. The browser turns speech into words, and the app measures 4 things on its own: speaking speed, pauses, pitch range, and loudness, compared to their usual. Claude gets the words, those numbers, their state, and their mood number, and coaches to fit. Recordings are never saved or uploaded by the app; only the words and numbers leave the computer. The browser's own speech-to-text sends audio to Google (Chrome, Edge) or Apple (Safari).
 4. No safety plan or emergency contacts (removed 2026-10-17).

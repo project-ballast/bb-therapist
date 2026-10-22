@@ -77,7 +77,7 @@ $("newChatBtn").addEventListener("click", () => {
 });
 
 // ---------- chat ----------
-// ---------- mood scale (1 very low, 5-6 okay, 10 very high / wired) ----------
+// ---------- mood scale (1 very sad, 5-6 okay, 10 very happy) ----------
 const moodScale = $("moodScale");
 // chat.mood is their latest number (sent to Claude); chat.startMood is the one tapped in the top bar,
 // which stays put so a later "How do you feel now?" pick doesn't rewrite it.
@@ -108,7 +108,7 @@ function renderMood() {
 // Tapping a number updates their mood and sends it as their answer, which restarts the loop.
 function moodCheck() {
   const box = el("div", "moodcheck");
-  box.append(el("div", "moodbar-head", "How do you feel now? 1 very low · 5-6 okay · 10 very high"));
+  box.append(el("div", "moodbar-head", "How do you feel now? 1 very sad · 5-6 okay · 10 very happy"));
   const row = el("div", "mood-scale");
   moodButtons(row, (n) => {
     if (sending) return;
