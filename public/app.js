@@ -417,7 +417,7 @@ function renderSettings() {
   $("settingsMsg").textContent = "";
   fetch("/api/version", { cache: "no-store" })
     .then((r) => r.json())
-    .then((v) => ($("versionInfo").textContent = `App version: ${v.version} (Pacific time)` + (v.keySet === false ? ". Warning: no Claude API key is set on the server." : "")))
+    .then((v) => ($("versionInfo").textContent = `App version: ${v.version}` + (v.keySet === false ? ". Warning: no Claude API key is set on the server." : "")))
     .catch(() => ($("versionInfo").textContent = "App version: offline"));
 }
 $("saveSettings").addEventListener("click", () => {
