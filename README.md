@@ -17,8 +17,8 @@ Open http://localhost:3000. Voice uses the browser's free speech-to-text: Chrome
 ## Put it online (Cloudflare Workers)
 `wrangler.jsonc` holds the setup. Cloudflare serves `public/` as plain files and runs `worker/index.js` only for `/api/*`.
 1. Cloudflare dashboard → Workers & Pages → Create → Import a repository → pick this repo (or open the existing `bb-therapist` Worker → Settings → Build and connect it).
-2. Build settings: Build command empty, Deploy command `npm run deploy` (the plain `npx wrangler deploy` also works, but Settings then shows a Cloudflare version id instead of the commit).
-3. Worker → Settings → Variables and Secrets → add two **Secrets**: `ANTHROPIC_API_KEY` and `APP_PASSCODE`. Then deploy again.
+2. Build settings: Build command empty, Deploy command `npx wrangler deploy` (the default).
+3. Worker → Settings → Variables and Secrets → add two **Secrets**: `ANTHROPIC_API_KEY` and `APP_PASSCODE`. Then deploy again. Settings in the app shows the App version as the deploy time (YYYYMMdd-hhmmss, Pacific time) and warns if the Claude key is missing.
 4. Open the `https://bb-therapist.<your-subdomain>.workers.dev` address in Chrome, Edge, or Safari on your computer.
 5. The first screen asks for the passcode; the browser remembers it after one correct entry. Shortcut: open `https://<your-address>/#key=<APP_PASSCODE>` to skip the screen.
 

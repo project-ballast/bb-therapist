@@ -18,6 +18,8 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Limits"] }],
   "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  // Keep variables added in the dashboard when deploying (Secrets are always kept).
+  "keep_vars": true,
   "vars": {
     "DAILY_LIMIT": "300",
     "CLAUDE_MODEL": "claude-opus-5-5",

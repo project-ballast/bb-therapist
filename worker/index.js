@@ -4,7 +4,7 @@
 import { DurableObject } from "cloudflare:workers";
 import Anthropic from "@anthropic-ai/sdk";
 import { BASE_PROMPT, DEBUG_PROMPT, buildContext } from "../server/prompt.js";
-import { cleanMessages } from "../server/messages.js";
+import { cleanMessages, versionStamp, errorReason } from "../server/messages.js";
 
 const TEN_MIN = 10 * 60 * 1000;
 
@@ -119,7 +119,7 @@ async function handleChat(request, env, ctx, limits) {
       stream.abort();
       // Log the error type only, never message content.
       console.error("chat error:", err?.status || "", err?.name || "error");
-      await send({ t: "error", v: err?.status === 429 ? "busy" : "failed" }).catch(() => {});
+      await send({ t: "error", v: errorReason(err) }).catch(() => {});
     }
     await writer.close().catch(() => {});
   })();
@@ -147,9 +147,8 @@ export default {
         return json((await limits.passcodeOk(request.headers.get("x-app-passcode"))) ? 204 : 401);
       }
       if (request.method === "GET" && url.pathname === "/api/version") {
-        // COMMIT is set by `npm run deploy`; otherwise show Cloudflare's own version id.
-        const commit = env.COMMIT || env.CF_VERSION_METADATA?.id || "unknown";
-        return json(200, { commit: commit.slice(0, 7) });
+        // When this version was uploaded to Cloudflare, plus whether the Claude key is set (never the key itself).
+        return json(200, { version: versionStamp(env.CF_VERSION_METADATA?.timestamp), keySet: !!env.ANTHROPIC_API_KEY });
       }
       return json(404, { error: "not found" });
     } catch (err) {

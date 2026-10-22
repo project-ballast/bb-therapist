@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
 import { BASE_PROMPT, DEBUG_PROMPT, buildContext } from "./prompt.js";
-import { cleanMessages } from "./messages.js";
+import { cleanMessages, versionStamp, errorReason } from "./messages.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 const PASSCODE = process.env.APP_PASSCODE || "";
@@ -19,6 +19,7 @@ if (!process.env.ANTHROPIC_API_KEY) console.warn("ANTHROPIC_API_KEY is not set; 
 if (!PASSCODE) console.warn("APP_PASSCODE is not set; anyone with the URL can use the chat.");
 
 const client = new Anthropic();
+const STARTED = versionStamp(Date.now()); // the Node server shows when it started
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -147,7 +148,7 @@ async function handleChat(req, res) {
   } catch (err) {
     // Log the error type only, never message content.
     console.error("chat error:", err?.status || "", err?.name || "error");
-    send({ t: "error", v: err?.status === 429 ? "busy" : "failed" });
+    send({ t: "error", v: errorReason(err) });
   }
   res.end();
 }
@@ -188,7 +189,7 @@ http
       }
       if (req.method === "GET" && req.url === "/api/version") {
         res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
-        return res.end(JSON.stringify({ commit: (process.env.RENDER_GIT_COMMIT || "local").slice(0, 7) }));
+        return res.end(JSON.stringify({ version: STARTED, keySet: !!process.env.ANTHROPIC_API_KEY }));
       }
       if (req.method === "GET") return await serveStatic(req, res);
       res.writeHead(405);
