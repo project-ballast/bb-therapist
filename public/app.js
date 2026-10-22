@@ -316,7 +316,8 @@ async function askClaude() {
     });
     if (res.status === 401) failed = "passcode";
     else if (res.status === 429) failed = "busy";
-    else if (!res.ok || !res.body) failed = "failed";
+    else if (res.status === 500) failed = (await res.json().catch(() => ({}))).error === "setup" ? "setup" : "failed";
+    else if (!res.ok || !res.body) failed = `http ${res.status}`;
     else {
       const reader = res.body.getReader();
       const dec = new TextDecoder();
@@ -369,8 +370,11 @@ async function askClaude() {
       offline: "No connection right now. If you need someone now, call or text 988.",
       refusal: "I couldn't answer that one. If you're struggling, call or text 988 to reach a person.",
       failed: "Something went wrong getting a reply. Try again, or call or text 988 if you need someone now.",
+      setup: "The app's server has no Claude API key. Add ANTHROPIC_API_KEY as a Secret in Cloudflare, then deploy again.",
+      key: "The app's Claude API key was rejected. Check ANTHROPIC_API_KEY in Cloudflare and the Anthropic account's credit.",
+      model: "Claude didn't accept the request (model or settings problem). Check CLAUDE_MODEL in Cloudflare.",
     };
-    $("messages").append(bubble("note", msgs[failed] || msgs.failed));
+    $("messages").append(bubble("note", msgs[failed] || `${msgs.failed} (${failed})`));
     // keep history valid: drop the unanswered user turn; one tap resends it
     const last = chat.messages.pop();
     if (last && failed !== "refusal") {
@@ -413,7 +417,7 @@ function renderSettings() {
   $("settingsMsg").textContent = "";
   fetch("/api/version", { cache: "no-store" })
     .then((r) => r.json())
-    .then((v) => ($("versionInfo").textContent = `App version: ${v.commit}`))
+    .then((v) => ($("versionInfo").textContent = `App version: ${v.version} (Pacific time)` + (v.keySet === false ? ". Warning: no Claude API key is set on the server." : "")))
     .catch(() => ($("versionInfo").textContent = "App version: offline"));
 }
 $("saveSettings").addEventListener("click", () => {
